@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace AssetStudio.GUI
 {
-    internal class OpenFolderDialog
+    public class OpenFolderDialog
     {
         public string InitialFolder { get; set; }
         public string DefaultFolder { get; set; }

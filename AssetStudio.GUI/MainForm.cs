@@ -92,6 +92,11 @@ namespace AssetStudio.GUI
             InitializeLogger();
             InitalizeOptions();
             FMODinit();
+            PluginConnection.SetMainForm(this);
+            PluginConnection.InitPlugin();
+            
+            
+            
         }
 
         private void InitializeExportOptions()
