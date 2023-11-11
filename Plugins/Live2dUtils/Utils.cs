@@ -147,7 +147,7 @@ namespace UnityLive2DExtractor
             }
         }
 
-        public static void GetL2DByAnimator(string folder)
+        public static void GetL2DByAnimator(string folder,bool nameWithIndex)
         {
             AssetList.GetSelectedAssets().ApplyFunc<AssetItem, Animator>(x =>
             {
@@ -280,11 +280,22 @@ namespace UnityLive2DExtractor
                         }
                         if (withAnimation)
                         {
+                            int i = 0;
                             CreateMotion3Json(gameObject, animationClips, (g, name, js) =>
                             {
                                 string motionRoot = Path.Combine(root, "Motions");
                                 Directory.CreateDirectory(motionRoot);
+                                if (nameWithIndex)
+                                {
+                                    name =name+ "_"+i.ToString();
+                                }
+                                else if(name == "")
+                                {
+                                    name = i.ToString();
+                                }
+
                                 File.WriteAllText(Path.Combine(motionRoot, name + ".motion3.json"), js);
+                                i += 1;
                             });
                         }
                         Console.WriteLine(message[0]+"saved!");

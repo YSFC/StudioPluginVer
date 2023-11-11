@@ -59,9 +59,19 @@ namespace Plugins.Ahykal
 
                 connection.Mainform.OpenFolderDelegate(o =>
                 {
-                    Util.GetL2DByAnimator(o.Folder);
+                    Util.GetL2DByAnimator(o.Folder,false);
                 });
                 
+            };
+
+            this.SetCommand(new ToolStripMenuItem("GetL2DByAnimator(motionNameWithIndex)")).Click += delegate
+            {
+
+                connection.Mainform.OpenFolderDelegate(o =>
+                {
+                    Util.GetL2DByAnimator(o.Folder, true);
+                });
+
             };
         }
     }
