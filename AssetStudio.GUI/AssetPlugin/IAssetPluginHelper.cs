@@ -8,40 +8,6 @@ using System.Windows.Forms;
 
 namespace AssetStudio.GUI
 {
-
-    public class RefInfo : IEqualityComparer<RefInfo>
-    {
-        public int m_FileID;
-        public long m_PathID;
-        public RefInfo() { }
-        public RefInfo(int m_FileID, long m_PathID)
-        {
-            this.m_FileID = m_FileID;
-            this.m_PathID = m_PathID;
-        }
-        public bool Equals(RefInfo x, RefInfo y)
-        {
-            return x.m_FileID == y.m_FileID && x.m_PathID == y.m_PathID;
-        }
-
-        public int GetHashCode([DisallowNull] RefInfo obj)
-        {
-            return 0;
-        }
-
-        public bool TryGet<T>(Component parent,out T component)where T : Object
-        {
-            var pptr = new PPtr<T>(m_FileID,m_PathID ,parent.assetsFile);
-            if (pptr.TryGet(out T t))
-            {
-                component = t;
-                return true;
-            }
-            component = null;
-            return false;
-        }
-
-    }
     public static class AssetPluginHelper
     {
         public static void Apply<T>(this IEnumerable<T> source, Action<T> action)
@@ -116,11 +82,6 @@ namespace AssetStudio.GUI
             return item;
         }
 
-        public static TypeTree ToTypeTree(this MonoBehaviour monoBehaviour)
-        {
-            return Studio.MonoBehaviourToTypeTree(monoBehaviour);
-        }
-
         public static OrderedDictionary ToDictionary(this MonoBehaviour monoBehaviour)
         {
             var obj = monoBehaviour.ToType();
@@ -132,24 +93,84 @@ namespace AssetStudio.GUI
             return obj;
         }
 
-        public static bool TryGetToken(this MonoBehaviour monoBehaviour, object key, out JToken token)
+        public static TypeTree ToTypeTree(this MonoBehaviour monoBehaviour)
         {
-            var obj = monoBehaviour.ToType();
-            if (obj == null)
-            {
-                var type = Studio.MonoBehaviourToTypeTree(monoBehaviour);
-                obj = monoBehaviour.ToType(type);
-            }
+            return Studio.MonoBehaviourToTypeTree(monoBehaviour);
+        }
+
+        public static bool TryGetComponent<T>(this Component self, object key, out T component) where T : Object
+        {
             try
             {
-                token = JToken.FromObject(obj[key]);
+                var obj = self.ToType();
+                if (obj == null)
+                {
+                    var type = Studio.MonoBehaviourToTypeTree(self as MonoBehaviour);
+                    obj = self.ToType(type);
+                }
+                if (obj.Contains(key))
+                {
+                    var od = obj[key] as OrderedDictionary;
+                    var pptr = new PPtr<T>((int)od["m_FileID"], (long)od["m_PathID"], self.assetsFile);
+                    if (pptr.TryGet(out T t))
+                    {
+                        component = t;
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                Console.WriteLine($"can't get target{typeof(T)} type in key:{key}");
+            }
+            component = null;
+            return false;
+        }
+
+        public static bool TryGetComponent<T>(this Component self, OrderedDictionary od, out T component) where T : Object
+        {
+            if (od != null)
+            {
+                var pptr = new PPtr<T>((int)od["m_FileID"], (long)od["m_PathID"], self.assetsFile);
+                if (pptr.TryGet(out T t))
+                {
+                    component = t;
+                    return true;
+                }
+            }
+            component = null;
+            return false;
+        }
+
+        public static bool TryGetComponents<T>(this Component self, object key, out List<T> components) where T : Object
+        {
+            try
+            {
+                components = new List<T>();
+                var obj = self.ToType();
+                if (obj == null)
+                {
+                    var type = Studio.MonoBehaviourToTypeTree(self as MonoBehaviour);
+                    obj = self.ToType(type);
+                }
+                var token = JToken.FromObject(obj[key]);
+                foreach (JObject item in token)
+                {
+                    var pptr = new PPtr<T>(item["m_FileID"].Value<int>(), item["m_PathID"].Value<long>(), self.assetsFile);
+                    if (pptr.TryGet(out T t))
+                    {
+                        components.Add(t);
+                    }
+                }
+
                 return true;
             }
             catch
             {
-                token = null;
-                return false;
+                Console.WriteLine($"can't get target{typeof(T)} type in key:{key}");
             }
+            components = null;
+            return false;
         }
 
         public static bool TryGetRefInfo(this MonoBehaviour monoBehaviour, object key, out RefInfo regInfo)
@@ -172,24 +193,59 @@ namespace AssetStudio.GUI
                 return false;
             }
         }
-        public static bool TryGetComponent<T>(this Component self, object key, out T component) where T : Object
+
+        public static bool TryGetToken(this MonoBehaviour monoBehaviour, object key, out JToken token)
         {
+            var obj = monoBehaviour.ToType();
+            if (obj == null)
+            {
+                var type = Studio.MonoBehaviourToTypeTree(monoBehaviour);
+                obj = monoBehaviour.ToType(type);
+            }
             try
             {
-                var obj = self.ToType();
-                //var token = JToken.FromObject(obj[key]);
-                //var pptr = new PPtr<T>(token["m_FileID"].Value<int>(), token["m_PathID"].Value<long>(), self.assetsFile);
-                var od = obj[key] as OrderedDictionary;
-                var pptr = new PPtr<T>((int)od["m_FileID"], (long)od["m_PathID"], self.assetsFile);
-                if (pptr.TryGet(out T t))
-                {
-                    component = t;
-                    return true;
-                }
+                token = JToken.FromObject(obj[key]);
+                return true;
             }
             catch
             {
-                Console.WriteLine($"can't get target{typeof(T)} type");
+                token = null;
+                return false;
+            }
+        }
+    }
+
+    public class RefInfo : IEqualityComparer<RefInfo>
+    {
+        public int m_FileID;
+        public long m_PathID;
+
+        public RefInfo()
+        { }
+
+        public RefInfo(int m_FileID, long m_PathID)
+        {
+            this.m_FileID = m_FileID;
+            this.m_PathID = m_PathID;
+        }
+
+        public bool Equals(RefInfo x, RefInfo y)
+        {
+            return x.m_FileID == y.m_FileID && x.m_PathID == y.m_PathID;
+        }
+
+        public int GetHashCode([DisallowNull] RefInfo obj)
+        {
+            return 0;
+        }
+
+        public bool TryGet<T>(Component parent, out T component) where T : Object
+        {
+            var pptr = new PPtr<T>(m_FileID, m_PathID, parent.assetsFile);
+            if (pptr.TryGet(out T t))
+            {
+                component = t;
+                return true;
             }
             component = null;
             return false;

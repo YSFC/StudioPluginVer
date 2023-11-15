@@ -1,19 +1,138 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using AssetStudio;
+﻿using AssetStudio;
+using AssetStudio.GUI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Plugins;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using AssetStudio.GUI;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.IO;
+using System.Linq;
+using System.Text;
+
 namespace UnityLive2DExtractor
 {
-    class Live2DExtractor
+    internal class Live2DExtractor
     {
-        public static void Extract(AssetsManager assetsManager,string folderPath) {
+        public static void CreateMotion3Json(GameObject gameObject, List<AnimationClip> animationClips, Action<GameObject, string, string> JsonMap)
+        {
+            var rootTransform = gameObject.m_Transform;
+            while (rootTransform.m_Father.TryGet(out var m_Father))
+            {
+                rootTransform = m_Father;
+            }
+            rootTransform.m_GameObject.TryGet(out var rootGameObject);
+            var converter = new CubismMotion3Converter(rootGameObject, animationClips.ToArray());
+            foreach (ImportedKeyframedAnimation animation in converter.AnimationList)
+            {
+                var json = new CubismMotion3Json
+                {
+                    Version = 3,
+                    Meta = new CubismMotion3Json.SerializableMeta
+                    {
+                        Duration = animation.Duration,
+                        Fps = animation.SampleRate,
+                        Loop = true,
+                        AreBeziersRestricted = true,
+                        CurveCount = animation.TrackList.Count,
+                        UserDataCount = animation.Events.Count
+                    },
+                    Curves = new CubismMotion3Json.SerializableCurve[animation.TrackList.Count]
+                };
+                int totalSegmentCount = 1;
+                int totalPointCount = 1;
+                for (int i = 0; i < animation.TrackList.Count; i++)
+                {
+                    var track = animation.TrackList[i];
+                    json.Curves[i] = new CubismMotion3Json.SerializableCurve
+                    {
+                        Target = track.Target,
+                        Id = track.Name,
+                        Segments = new List<float> { 0f, track.Curve[0].value }
+                    };
+                    for (var j = 1; j < track.Curve.Count; j++)
+                    {
+                        var curve = track.Curve[j];
+                        var preCurve = track.Curve[j - 1];
+                        if (Math.Abs(curve.time - preCurve.time - 0.01f) < 0.0001f) //InverseSteppedSegment
+                        {
+                            var nextCurve = track.Curve[j + 1];
+                            if (nextCurve.value == curve.value)
+                            {
+                                json.Curves[i].Segments.Add(3f);
+                                json.Curves[i].Segments.Add(nextCurve.time);
+                                json.Curves[i].Segments.Add(nextCurve.value);
+                                j += 1;
+                                totalPointCount += 1;
+                                totalSegmentCount++;
+                                continue;
+                            }
+                        }
+                        if (float.IsPositiveInfinity(curve.inSlope)) //SteppedSegment
+                        {
+                            json.Curves[i].Segments.Add(2f);
+                            json.Curves[i].Segments.Add(curve.time);
+                            json.Curves[i].Segments.Add(curve.value);
+                            totalPointCount += 1;
+                        }
+                        else if (preCurve.outSlope == 0f && Math.Abs(curve.inSlope) < 0.0001f) //LinearSegment
+                        {
+                            json.Curves[i].Segments.Add(0f);
+                            json.Curves[i].Segments.Add(curve.time);
+                            json.Curves[i].Segments.Add(curve.value);
+                            totalPointCount += 1;
+                        }
+                        else //BezierSegment
+                        {
+                            var tangentLength = (curve.time - preCurve.time) / 3f;
+                            json.Curves[i].Segments.Add(1f);
+                            json.Curves[i].Segments.Add(preCurve.time + tangentLength);
+                            json.Curves[i].Segments.Add(preCurve.outSlope * tangentLength + preCurve.value);
+                            json.Curves[i].Segments.Add(curve.time - tangentLength);
+                            json.Curves[i].Segments.Add(curve.value - curve.inSlope * tangentLength);
+                            json.Curves[i].Segments.Add(curve.time);
+                            json.Curves[i].Segments.Add(curve.value);
+                            totalPointCount += 3;
+                        }
+                        totalSegmentCount++;
+                    }
+                }
+                json.Meta.TotalSegmentCount = totalSegmentCount;
+                json.Meta.TotalPointCount = totalPointCount;
+
+                json.UserData = new CubismMotion3Json.SerializableUserData[animation.Events.Count];
+                var totalUserDataSize = 0;
+                for (var i = 0; i < animation.Events.Count; i++)
+                {
+                    var @event = animation.Events[i];
+                    json.UserData[i] = new CubismMotion3Json.SerializableUserData
+                    {
+                        Time = @event.time,
+                        Value = @event.value
+                    };
+                    totalUserDataSize += @event.value.Length;
+                }
+                json.Meta.TotalUserDataSize = totalUserDataSize;
+                JsonMap?.Invoke(gameObject, animation.Name, JsonConvert.SerializeObject(json, Formatting.Indented, new MyJsonConverter()));
+
+                // motions.Add($"motions/{animation.Name}.motion3.json");
+                //File.WriteAllText($"{destAnimationPath}{animation.Name}.motion3.json", JsonConvert.SerializeObject(json, Formatting.Indented, new MyJsonConverter()));
+            }
+        }
+
+        public static void CreateMotion3Json(Animator animator, List<AnimationClip> animationClips, Action<GameObject, string, string> JsonMap)
+        {
+            if (animator.m_GameObject.TryGet(out GameObject gameObject))
+            {
+                CreateMotion3Json(gameObject, animationClips, JsonMap);
+            }
+        }
+
+        public static void Extract(AssetsManager assetsManager, string folderPath)
+        {
             Console.WriteLine($"Loading...");
             assetsManager.LoadFolder(folderPath);
             if (assetsManager.assetsFileList.Count == 0)
@@ -35,6 +154,7 @@ namespace UnityLive2DExtractor
                                 }
                             }
                             break;
+
                         case AssetBundle m_AssetBundle:
                             foreach (var m_Container in m_AssetBundle.m_Container)
                             {
@@ -51,6 +171,7 @@ namespace UnityLive2DExtractor
                                 }
                             }
                             break;
+
                         case ResourceManager m_ResourceManager:
                             foreach (var m_Container in m_ResourceManager.m_Container)
                             {
@@ -332,8 +453,291 @@ namespace UnityLive2DExtractor
             }
             Console.WriteLine("Done!");
             Console.Read();
-        
-    }
+        }
+
+        public static void ForceSaveAsMoc3(IEnumerable<AssetItem> assetItems, string folder, bool withPathID)
+        {
+            assetItems.Apply(asset =>
+            {
+                if (asset.Type == ClassIDType.MonoBehaviour)
+                {
+                    var monoBehaviour = asset.Asset as MonoBehaviour;
+
+                    if (TryGetMocByClassName(monoBehaviour, out byte[] moc) || TryGetMocByHeader(monoBehaviour, out moc))
+                    {
+                        string savePath;
+                        if (withPathID)
+                        {
+                            savePath = Path.Combine(folder, asset.m_PathID.ToString() + ".moc3");
+                        }
+                        else
+                        {
+                            string savePathWithOutExt = Path.Combine(folder, Path.GetFileNameWithoutExtension(asset.Name));
+                            savePath = savePathWithOutExt + ".moc3";
+                            if (File.Exists(savePath))
+                            {
+                                savePath = savePathWithOutExt + asset + ".moc3";
+                            }
+                        }
+
+                        File.WriteAllBytes(savePath, moc);
+                        Console.WriteLine($"Save {savePath} successfully.");
+                    }
+                }
+            });
+            Console.WriteLine("Done!");
+        }
+
+        public static void ForceSaveAsPhysics(IEnumerable<AssetItem> assetItems, string folder, bool withPathID)
+        {
+            assetItems.Apply(asset =>
+            {
+                if (asset.Type == ClassIDType.MonoBehaviour)
+                {
+                    var monoBehaviour = asset.Asset as MonoBehaviour;
+
+                    if (TryGetPhysicByClassName(monoBehaviour, out string physicJson) || TryGetPhysicBySubRig(monoBehaviour, out physicJson))
+                    {
+                        string savePath;
+                        if (withPathID)
+                        {
+                            savePath = Path.Combine(folder, asset.m_PathID.ToString() + ".physics3.json");
+                        }
+                        else
+                        {
+                            string savePathWithOutExt = Path.Combine(folder, Path.GetFileNameWithoutExtension(asset.Name));
+                            savePath = savePathWithOutExt + ".physics3.json";
+                            if (File.Exists(savePath))
+                            {
+                                savePath = savePathWithOutExt + asset + ".physics3.json";
+                            }
+                        }
+
+                        File.WriteAllText(savePath, physicJson);
+                        Console.WriteLine($"Save {savePath} successfully.");
+                    }
+                }
+            });
+            Console.WriteLine("Done!");
+        }
+
+        public static void SaveByAnimators(IEnumerable<AssetItem> animators, string folder, bool withPathID)
+        {
+            animators.Apply(asset =>
+            {
+                var animator = asset.Asset as Animator;
+                if (animator.m_GameObject.TryGet(out var gameObject))
+                {
+                    bool flag = false;
+                    bool withPhysic = false;
+                    byte[] mocByte = null;
+                    string physicJson = string.Empty;
+                    List<AnimationClip> animationClips;
+                    foreach (var component in gameObject.m_Components)
+                    {
+                        if (component.TryGet(out MonoBehaviour monoBehaviour))
+                        {
+                            var dict = monoBehaviour.ToDictionary();
+                            if (!flag && dict.Contains("_moc") && monoBehaviour.TryGetComponent(dict["_moc"] as OrderedDictionary, out MonoBehaviour moc))
+                            {
+                                flag = true;
+                                mocByte = ParseMoc(moc);
+                                continue;
+                            }
+                            if (!withPhysic && dict.Contains("_rig"))
+                            {
+                                withPhysic = true;
+                                physicJson = ParsePhysics(monoBehaviour);
+                                continue;
+                            }
+                            if (flag && withPhysic)
+                                break;
+                        }
+                    }
+                    if (flag)
+                    {
+                        string subfolder = withPathID ? Path.Combine(folder, gameObject.Name, gameObject.m_PathID.ToString()) : Path.Combine(folder, gameObject.Name);
+                        Directory.CreateDirectory(subfolder);
+
+                        #region saveMoc3
+
+                        string mocPath = Path.Combine(subfolder, gameObject.Name + ".moc3");
+                        File.WriteAllBytes(mocPath, mocByte);
+                        Console.WriteLine($"------\nSave {mocPath} successfully.");
+
+                        #endregion saveMoc3
+
+                        #region savePhysic
+
+                        if (withPhysic)
+                        {
+                            string phyPath = Path.Combine(subfolder, gameObject.Name + ".physics3.json");
+                            File.WriteAllText(phyPath, physicJson);
+                            Console.WriteLine($"Save {phyPath} successfully.");
+                        }
+
+                        #endregion savePhysic
+
+                        #region saveTexture
+
+                        if (gameObject.m_Transform.m_Children.FirstOrDefault(x => x.TryGet(out Transform result) && result.m_GameObject.Name == "Drawables").TryGet(out Transform result))
+                        {
+                            var textures = result.m_Children.ApplyFunc(x =>
+                                (x.TryGet(out Transform artMeshTransform)
+                                && artMeshTransform.m_GameObject.TryGet(out GameObject artMesh)
+                                && artMesh.m_Components[4].TryGet(out MonoBehaviour cubismRenderer)
+                                && cubismRenderer.TryGetRefInfo("_mainTexture", out RefInfo token))
+                                ? token : null,
+                                true).ToHashSet(new RefInfo())
+                                .ApplyFunc(x => x.TryGet(result, out Texture2D tex) ? tex : null, true);
+                            string imgRoot = Path.Combine(subfolder, "Textures");
+                            Directory.CreateDirectory(imgRoot);
+                            textures.SaveTextures(imgRoot);
+                        }
+
+                        #endregion saveTexture
+
+                        #region saveMotion
+
+                        if (animator.m_Controller.TryGet(out AnimatorController controller))
+                        {
+                            animationClips = controller.m_AnimationClips.ApplyFunc(x => x.TryGet(out AnimationClip animationClip) ? animationClip : null, true).ToList();
+                            var count = animationClips.Count;
+                            Console.WriteLine($"Get {count} motions.");
+                            if (animationClips.Count > 0)
+                            {
+                                int i = 0;
+                                CreateMotion3Json(gameObject, animationClips, (g, name, m) =>
+                                {
+                                    string motionRoot = Path.Combine(subfolder, "Motions");
+                                    Directory.CreateDirectory(motionRoot);
+                                    if (name == "")
+                                    {
+                                        name = i.ToString();
+                                    }
+                                    string motionPath = Path.Combine(motionRoot, name + ".motion3.json");
+                                    File.WriteAllText(motionPath, m);
+                                    Console.WriteLine($"Save {motionPath} successfully.");
+                                    i += 1;
+                                });
+                            }
+                        }
+
+                        #endregion saveMotion
+                    }
+                }
+            });
+            Console.WriteLine("Done!");
+        }
+
+        public static void SaveMotionsBySelectedAnimatorClips(string folder, bool withPathID)
+        {
+            List<AnimationClip> animationClips = new List<AnimationClip>();
+            List<Animator> animators = new List<Animator>();
+            AssetList.GetSelectedAssets().Apply(x =>
+            {
+                if (x.Type == ClassIDType.AnimationClip)
+                {
+                    animationClips.Add(x.Asset as AnimationClip);
+                }
+                else if (x.Type == ClassIDType.Animator)
+                {
+                    animators.Add(x.Asset as Animator);
+                }
+            });
+            foreach (Animator animator in animators)
+            {
+                CreateMotion3Json(animator, animationClips,
+                    (gameObject, name, json) =>
+                    {
+                        string savePath = withPathID ? Path.Combine(folder, gameObject.Name, gameObject.m_PathID.ToString(), "Motions", name + ".motion3.json") :
+                            Path.Combine(folder, gameObject.Name, "Motions", name + ".motion3.json");
+                        Directory.CreateDirectory(Directory.GetParent(savePath).ToString());
+                        File.WriteAllText(savePath, json);
+                        Console.WriteLine($"Save {savePath} successfully.");
+                    }
+                );
+            }
+            Console.WriteLine("Done!");
+        }
+
+        public static bool TryGetMocByClassName(MonoBehaviour monoBehaviour, out byte[] moc)
+        {
+            if (monoBehaviour.m_Script.TryGet(out var m_Script))
+            {
+                if (m_Script.m_ClassName == "CubismMoc")
+                {
+                    moc = ParseMoc(monoBehaviour);
+                    return true;
+                }
+            }
+            moc = null;
+            return false;
+        }
+
+        public static bool TryGetMocByHeader(MonoBehaviour monoBehaviour, out byte[] moc)
+        {
+            var reader = monoBehaviour.reader;
+            reader.Reset();
+            reader.Position += 28; //PPtr<GameObject> m_GameObject, m_Enabled, PPtr<MonoScript>
+            reader.ReadAlignedString(); //m_Name
+            var length = reader.ReadInt32();
+            var signature = Encoding.UTF8.GetString(reader.ReadBytes(4)); //MOC3
+            if (signature == "MOC3")
+            {
+                reader.Position -= 4;
+                moc = reader.ReadBytes(length);
+                return true;
+            }
+            moc = null;
+            return false;
+        }
+
+        public static bool TryGetPhysicByClassName(MonoBehaviour monoBehaviour, out string physic)
+        {
+            if (monoBehaviour.m_Script.TryGet(out var m_Script))
+            {
+                if (m_Script.m_ClassName == "CubismPhysicsController")
+                {
+                    physic = ParsePhysics(monoBehaviour);
+                    return true;
+                }
+            }
+            physic = null;
+            return false;
+        }
+
+        public static bool TryGetPhysicBySubRig(MonoBehaviour monoBehaviour, out string physic)
+        {
+            SerializedType serializedType = monoBehaviour.reader.serializedType;
+            TypeTree type;
+            if (serializedType?.m_Type != null)
+            {
+                type = serializedType.m_Type;
+            }
+            else
+            {
+                type = monoBehaviour.ToTypeTree();
+            }
+            TypeTreeNode withSubRig = type.m_Nodes.FirstOrDefault(x => x.m_Name == "SubRigs");//_rig;SubRigs
+            if (withSubRig != null)
+            {
+                physic = ParsePhysics(monoBehaviour);
+                return true;
+            }
+            physic = string.Empty;
+            return false;
+        }
+
+        private static byte[] ParseMoc(MonoBehaviour moc)
+        {
+            var reader = moc.reader;
+            reader.Reset();
+            reader.Position += 28; //PPtr<GameObject> m_GameObject, m_Enabled, PPtr<MonoScript>
+            reader.ReadAlignedString(); //m_Name
+            return reader.ReadBytes(reader.ReadInt32());
+        }
+
         private static string ParsePhysics(MonoBehaviour physics)
         {
             try
@@ -456,21 +860,12 @@ namespace UnityLive2DExtractor
                 };
                 return JsonConvert.SerializeObject(physicsJson, Formatting.Indented, new MyJsonConverter2());
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"Error while exporting physics with name: {physics.m_Name}\nReason: {ex}");
             }
 
             return string.Empty;
-        }
-
-        private static byte[] ParseMoc(MonoBehaviour moc)
-        {
-            var reader = moc.reader;
-            reader.Reset();
-            reader.Position += 28; //PPtr<GameObject> m_GameObject, m_Enabled, PPtr<MonoScript>
-            reader.ReadAlignedString(); //m_Name
-            return reader.ReadBytes(reader.ReadInt32());
         }
     }
 }

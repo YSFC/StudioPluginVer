@@ -19,7 +19,17 @@ namespace AssetStudio.GUI
                 okAction?.Invoke(openFolderDialog);
             }
         }
-
+        public void OpenFolderDelegate(Action<OpenFolderDialog> okAction,string title)
+        {
+            var openFolderDialog = new OpenFolderDialog();
+            openFolderDialog.Title = title;
+            openFolderDialog.InitialFolder = openDirectoryBackup;
+            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                openDirectoryBackup = openFolderDialog.Folder;
+                okAction?.Invoke(openFolderDialog);
+            }
+        }
 
 
         public AssetsManager CreateAssetsManager()

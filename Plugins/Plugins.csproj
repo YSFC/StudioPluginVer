@@ -4,11 +4,9 @@
     <TargetFrameworks>net6.0-windows;net7.0-windows</TargetFrameworks>
     <!--<ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>-->
+    <OutputPath>$(SolutionDir)AssetStudio.GUI\bin\$(Configuration)\$(TargetFramework)\Plugins</OutputPath>
+    <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="Live2dUtils\Util.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AssetStudio.GUI\AssetStudio.GUI.csproj">
