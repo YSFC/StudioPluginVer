@@ -11,14 +11,6 @@ using static AssetStudio.GUI.Exporter;
 
 namespace AssetStudio.GUI
 {
-    internal enum ExportType
-    {
-        Convert,
-        Raw,
-        Dump,
-        JSON
-    }
-
     internal enum ExportFilter
     {
         All,
@@ -90,7 +82,7 @@ namespace AssetStudio.GUI
             {
                 var bundleFile = new BundleFile(reader, Game);
                 reader.Dispose();
-                if (bundleFile.fileList.Length > 0)
+                if (bundleFile.fileList.Count > 0)
                 {
                     var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
                     return ExtractStreamFile(extractPath, bundleFile.fileList);
@@ -108,7 +100,7 @@ namespace AssetStudio.GUI
             StatusStripUpdate($"Decompressing {reader.FileName} ...");
             var webFile = new WebFile(reader);
             reader.Dispose();
-            if (webFile.fileList.Length > 0)
+            if (webFile.fileList.Count > 0)
             {
                 var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
                 return ExtractStreamFile(extractPath, webFile.fileList);
@@ -134,8 +126,8 @@ namespace AssetStudio.GUI
                         case FileType.BundleFile:
                             total += ExtractBundleFile(subReader, subSavePath);
                             break;
-                        case FileType.Mhy0File:
-                            total += ExtractMhy0File(subReader, subSavePath);
+                        case FileType.MhyFile:
+                            total += ExtractMhyFile(subReader, subSavePath);
                             break;
                     }
                 } while (stream.Remaining > 0);
@@ -163,14 +155,14 @@ namespace AssetStudio.GUI
             return total;
         }
 
-        private static int ExtractMhy0File(FileReader reader, string savePath)
+        private static int ExtractMhyFile(FileReader reader, string savePath)
         {
             StatusStripUpdate($"Decompressing {reader.FileName} ...");
             try
             {
-                var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);
+                var mhy0File = new MhyFile(reader, (Mhy)Game);
                 reader.Dispose();
-                if (mhy0File.fileList.Length > 0)
+                if (mhy0File.fileList.Count > 0)
                 {
                     var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
                     return ExtractStreamFile(extractPath, mhy0File.fileList);
@@ -178,12 +170,12 @@ namespace AssetStudio.GUI
             }
             catch (InvalidCastException)
             {
-                Logger.Error($"Game type mismatch, Expected {nameof(Mhy0)} but got {Game.Name} ({Game.GetType().Name}) !!");
+                Logger.Error($"Game type mismatch, Expected {nameof(Mhy)} but got {Game.Name} ({Game.GetType().Name}) !!");
             }
             return 0;
         }
 
-        private static int ExtractStreamFile(string extractPath, StreamFile[] fileList)
+        private static int ExtractStreamFile(string extractPath, List<StreamFile> fileList)
         {
             int extractedCount = 0;
             foreach (var file in fileList)
@@ -265,20 +257,21 @@ namespace AssetStudio.GUI
                         case Texture2D m_Texture2D:
                             if (!string.IsNullOrEmpty(m_Texture2D.m_StreamData?.path))
                                 assetItem.FullSize = asset.byteSize + m_Texture2D.m_StreamData.size;
-                            exportable = true;
+                            exportable = ClassIDType.Texture2D.CanExport();
                             break;
                         case AudioClip m_AudioClip:
                             if (!string.IsNullOrEmpty(m_AudioClip.m_Source))
                                 assetItem.FullSize = asset.byteSize + m_AudioClip.m_Size;
-                            exportable = true;
+                            exportable = ClassIDType.AudioClip.CanExport();
                             break;
                         case VideoClip m_VideoClip:
                             if (!string.IsNullOrEmpty(m_VideoClip.m_OriginalPath))
-                                assetItem.FullSize = asset.byteSize + (long)m_VideoClip.m_ExternalResources.m_Size;
-                            exportable = true;
+                                assetItem.FullSize = asset.byteSize + m_VideoClip.m_ExternalResources.m_Size;
+                            exportable = ClassIDType.VideoClip.CanExport();
                             break;
                         case PlayerSettings m_PlayerSettings:
                             productName = m_PlayerSettings.productName;
+                            exportable = ClassIDType.PlayerSettings.CanExport();
                             break;
                         case AssetBundle m_AssetBundle:
                             if (!SkipContainer)
@@ -294,30 +287,36 @@ namespace AssetStudio.GUI
                                     }
                                 }
                             }
+
+                            exportable = ClassIDType.AssetBundle.CanExport();
                             break;
                         case IndexObject m_IndexObject:
                             foreach(var index in m_IndexObject.AssetMap)
                             {
                                 mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                             }
+
+                            exportable = ClassIDType.IndexObject.CanExport();
                             break;
                         case ResourceManager m_ResourceManager:
                             foreach (var m_Container in m_ResourceManager.m_Container)
                             {
                                 containers.Add((m_Container.Value, m_Container.Key));
                             }
+
+                            exportable = ClassIDType.ResourceManager.CanExport();
                             break;
-                        case Mesh _:
-                        case TextAsset _:
-                        case AnimationClip _ when AnimationClip.Parsable:
-                        case Font _:
-                        case MovieTexture _:
-                        case Sprite _:
-                        case Material _:
-                        case MiHoYoBinData _:
-                        case Shader _ when Shader.Parsable:
-                        case Animator _:
-                        case MonoBehaviour _:
+                        case Mesh _ when ClassIDType.Mesh.CanExport():
+                        case TextAsset _ when ClassIDType.TextAsset.CanExport():
+                        case AnimationClip _ when ClassIDType.AnimationClip.CanExport():
+                        case Font _ when ClassIDType.Font.CanExport():
+                        case MovieTexture _ when ClassIDType.MovieTexture.CanExport():
+                        case Sprite _ when ClassIDType.Sprite.CanExport():
+                        case Material _ when ClassIDType.Material.CanExport():
+                        case MiHoYoBinData _ when ClassIDType.MiHoYoBinData.CanExport():
+                        case Shader _ when ClassIDType.Shader.CanExport():
+                        case Animator _ when ClassIDType.Animator.CanExport():
+                        case MonoBehaviour _ when ClassIDType.MonoBehaviour.CanExport():
                             exportable = true;
                             break;
                     }

@@ -13,14 +13,15 @@ namespace AssetStudio
             int index = 0;
             Games.Add(index++, new(GameType.Normal));
             Games.Add(index++, new(GameType.UnityCN));
-            Games.Add(index++, new Mhy0(GameType.GI, GIMhy0ShiftRow, GIMhy0Key, GIMhy0Mul, GIExpansionKey, GISBox, GIInitVector, GIInitSeed));
+            Games.Add(index++, new Mhy(GameType.GI, GIMhyShiftRow, GIMhyKey, GIMhyMul, GIExpansionKey, GISBox, GIInitVector, GIInitSeed));
             Games.Add(index++, new Mr0k(GameType.GI_Pack, PackExpansionKey, blockKey: PackBlockKey));
             Games.Add(index++, new Mr0k(GameType.GI_CB1));
             Games.Add(index++, new Blk(GameType.GI_CB2, GI_CBXExpansionKey, initVector: GI_CBXInitVector, initSeed: GI_CBXInitSeed));
             Games.Add(index++, new Blk(GameType.GI_CB3, GI_CBXExpansionKey, initVector: GI_CBXInitVector, initSeed: GI_CBXInitSeed));
-            Games.Add(index++, new Mhy0(GameType.GI_CB3Pre, GI_CBXMhy0ShiftRow, GI_CBXMhy0Key, GI_CBXMhy0Mul, GI_CBXExpansionKey, GI_CBXSBox, GI_CBXInitVector, GI_CBXInitSeed));
+            Games.Add(index++, new Mhy(GameType.GI_CB3Pre, GI_CBXMhyShiftRow, GI_CBXMhyKey, GI_CBXMhyMul, GI_CBXExpansionKey, GI_CBXSBox, GI_CBXInitVector, GI_CBXInitSeed));
             Games.Add(index++, new Mr0k(GameType.BH3, BH3ExpansionKey, BH3SBox, BH3InitVector, BH3BlockKey));
             Games.Add(index++, new Mr0k(GameType.BH3Pre, PackExpansionKey, blockKey: PackBlockKey));
+            Games.Add(index++, new Mr0k(GameType.BH3PrePre, PackExpansionKey, blockKey: PackBlockKey));
             Games.Add(index++, new Mr0k(GameType.SR_CB2, Mr0kExpansionKey, initVector: Mr0kInitVector, blockKey: Mr0kBlockKey));
             Games.Add(index++, new Mr0k(GameType.SR, Mr0kExpansionKey, initVector: Mr0kInitVector, blockKey: Mr0kBlockKey));
             Games.Add(index++, new Mr0k(GameType.ZZZ_CB1, Mr0kExpansionKey, initVector: Mr0kInitVector, blockKey: Mr0kBlockKey));
@@ -41,6 +42,12 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.CodenameJump));
             Games.Add(index++, new Game(GameType.GirlsFrontline));
             Games.Add(index++, new Game(GameType.Reverse1999));
+            Games.Add(index++, new Game(GameType.ArknightsEndfield));
+            Games.Add(index++, new Game(GameType.JJKPhantomParade));
+            Games.Add(index++, new Game(GameType.MuvLuvDimensions));
+            Games.Add(index++, new Game(GameType.PartyAnimals));
+            Games.Add(index++, new Game(GameType.LoveAndDeepspace));
+            Games.Add(index++, new Game(GameType.SchoolGirlStrikers));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -107,17 +114,17 @@ namespace AssetStudio
         }
     }
 
-    public record Mhy0 : Blk
+    public record Mhy : Blk
     {
-        public byte[] Mhy0ShiftRow { get; }
-        public byte[] Mhy0Key { get; }
-        public byte[] Mhy0Mul { get; }
+        public byte[] MhyShiftRow { get; }
+        public byte[] MhyKey { get; }
+        public byte[] MhyMul { get; }
 
-        public Mhy0(GameType type, byte[] mhy0ShiftRow, byte[] mhy0Key, byte[] mhy0Mul, byte[] expansionKey = null, byte[] sBox = null, byte[] initVector = null, ulong initSeed = 0) : base(type, expansionKey, sBox, initVector, initSeed)
+        public Mhy(GameType type, byte[] mhyShiftRow, byte[] mhyKey, byte[] mhyMul, byte[] expansionKey = null, byte[] sBox = null, byte[] initVector = null, ulong initSeed = 0) : base(type, expansionKey, sBox, initVector, initSeed)
         {
-            Mhy0ShiftRow = mhy0ShiftRow;
-            Mhy0Key = mhy0Key;
-            Mhy0Mul = mhy0Mul;
+            MhyShiftRow = mhyShiftRow;
+            MhyKey = mhyKey;
+            MhyMul = mhyMul;
         }
     }
 
@@ -133,6 +140,7 @@ namespace AssetStudio
         GI_CB3Pre,
         BH3,
         BH3Pre,
+        BH3PrePre,
         ZZZ_CB1,
         SR_CB2,
         SR,
@@ -152,7 +160,13 @@ namespace AssetStudio
         ProjectSekai,
         CodenameJump,
         GirlsFrontline,
-        Reverse1999
+        Reverse1999,
+        ArknightsEndfield,
+        JJKPhantomParade,
+        MuvLuvDimensions,
+        PartyAnimals,
+        LoveAndDeepspace,
+        SchoolGirlStrikers,
     }
 
     public static class GameTypes
@@ -167,6 +181,7 @@ namespace AssetStudio
         public static bool IsGICB3Pre(this GameType type) => type == GameType.GI_CB3Pre;
         public static bool IsBH3(this GameType type) => type == GameType.BH3;
         public static bool IsBH3Pre(this GameType type) => type == GameType.BH3Pre;
+        public static bool IsBH3PrePre(this GameType type) => type == GameType.BH3PrePre;
         public static bool IsZZZCB1(this GameType type) => type == GameType.ZZZ_CB1;
         public static bool IsSRCB2(this GameType type) => type == GameType.SR_CB2;
         public static bool IsSR(this GameType type) => type == GameType.SR;
@@ -174,6 +189,8 @@ namespace AssetStudio
         public static bool IsNaraka(this GameType type) => type == GameType.Naraka;
         public static bool IsOPFP(this GameType type) => type == GameType.OPFP;
         public static bool IsNetEase(this GameType type) => type == GameType.NetEase;
+        public static bool IsArknightsEndfield(this GameType type) => type == GameType.ArknightsEndfield;
+        public static bool IsLoveAndDeepspace(this GameType type) => type == GameType.LoveAndDeepspace;
         public static bool IsGIGroup(this GameType type) => type switch
         {
             GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre => true,
@@ -200,13 +217,13 @@ namespace AssetStudio
 
         public static bool IsBlockFile(this GameType type) => type switch
         {
-            GameType.BH3 or GameType.BH3Pre or GameType.SR or GameType.GI_Pack or GameType.TOT => true,
+            GameType.BH3 or GameType.BH3Pre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield => true,
             _ => false,
         };
 
         public static bool IsMhyGroup(this GameType type) => type switch
         {
-            GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre or GameType.BH3 or GameType.BH3Pre or GameType.SR_CB2 or GameType.SR or GameType.ZZZ_CB1 or GameType.TOT => true,
+            GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre or GameType.BH3 or GameType.BH3Pre or GameType.BH3PrePre or GameType.SR_CB2 or GameType.SR or GameType.ZZZ_CB1 or GameType.TOT => true,
             _ => false,
         };
     }

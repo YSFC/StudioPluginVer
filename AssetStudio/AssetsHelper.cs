@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Text;
 using MessagePack;
-using System.Reflection.Metadata.Ecma335;
 
 namespace AssetStudio
 {
@@ -30,7 +29,7 @@ namespace AssetStudio
         {
             public string Path { get; set; }
             public long Offset { get; set; }
-            public string[] Dependencies { get; set; }
+            public List<string> Dependencies { get; set; }
         }
 
         public static void SetUnityVersion(string version)
@@ -207,7 +206,7 @@ namespace AssetStudio
                 {
                     Path = relativePath,
                     Offset = assetsFile.offset,
-                    Dependencies = assetsFile.m_Externals.Select(x => x.fileName).ToArray()
+                    Dependencies = assetsFile.m_Externals.Select(x => x.fileName).ToList()
                 };
 
                 if (CABMap.ContainsKey(assetsFile.fileName))
@@ -236,7 +235,7 @@ namespace AssetStudio
                     writer.Write(kv.Key);
                     writer.Write(kv.Value.Path);
                     writer.Write(kv.Value.Offset);
-                    writer.Write(kv.Value.Dependencies.Length);
+                    writer.Write(kv.Value.Dependencies.Count);
                     foreach (var cab in kv.Value.Dependencies)
                     {
                         writer.Write(cab);
@@ -298,10 +297,10 @@ namespace AssetStudio
                 var path = reader.ReadString();
                 var offset = reader.ReadInt64();
                 var depCount = reader.ReadInt32();
-                var dependencies = new string[depCount];
+                var dependencies = new List<string>();
                 for (int j = 0; j < depCount; j++)
                 {
-                    dependencies[j] = reader.ReadString();
+                    dependencies.Add(reader.ReadString());
                 }
                 var entry = new Entry()
                 {
@@ -328,7 +327,7 @@ namespace AssetStudio
 
                 UpdateContainers(assets, game);
 
-                ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
+                ExportAssetsMap(assets, game, mapName, savePath, exportListType, resetEvent);
             }
             catch(Exception e)
             {
@@ -362,12 +361,12 @@ namespace AssetStudio
                         Container = ""
                     };
 
-                    var exportable = true;
+                    var exportable = false;
                     try
                     {
                         switch (objectReader.type)
                         {
-                            case ClassIDType.AssetBundle:
+                            case ClassIDType.AssetBundle when ClassIDType.AssetBundle.CanParse():
                                 var assetBundle = new AssetBundle(objectReader);
                                 foreach (var m_Container in assetBundle.m_Container)
                                 {
@@ -379,33 +378,38 @@ namespace AssetStudio
                                         containers.Add((assetBundle.m_PreloadTable[k], m_Container.Key));
                                     }
                                 }
+
                                 obj = null;
                                 asset.Name = assetBundle.m_Name;
-                                exportable = !Minimal;
+                                exportable = ClassIDType.AssetBundle.CanExport();
                                 break;
-                            case ClassIDType.GameObject:
+                            case ClassIDType.GameObject when ClassIDType.GameObject.CanParse():
                                 var gameObject = new GameObject(objectReader);
                                 obj = gameObject;
                                 asset.Name = gameObject.m_Name;
-                                exportable = !Minimal;
+                                exportable = ClassIDType.GameObject.CanExport();
                                 break;
-                            case ClassIDType.Shader when Shader.Parsable:
+                            case ClassIDType.Shader when ClassIDType.Shader.CanParse():
                                 asset.Name = objectReader.ReadAlignedString();
                                 if (string.IsNullOrEmpty(asset.Name))
                                 {
                                     var m_parsedForm = new SerializedShader(objectReader);
                                     asset.Name = m_parsedForm.m_Name;
                                 }
+
+                                exportable = ClassIDType.Shader.CanExport();
                                 break;
-                            case ClassIDType.Animator:
+                            case ClassIDType.Animator when ClassIDType.Animator.CanParse():
                                 var component = new PPtr<Object>(objectReader);
                                 animators.Add((component, asset));
+                                exportable = ClassIDType.Animator.CanExport();
                                 break;
-                            case ClassIDType.MiHoYoBinData:
+                            case ClassIDType.MiHoYoBinData when ClassIDType.MiHoYoBinData.CanParse():
                                 var MiHoYoBinData = new MiHoYoBinData(objectReader);
                                 obj = MiHoYoBinData;
+                                exportable = ClassIDType.MiHoYoBinData.CanExport();
                                 break;
-                            case ClassIDType.IndexObject:
+                            case ClassIDType.IndexObject when ClassIDType.IndexObject.CanParse():
                                 var indexObject = new IndexObject(objectReader);
                                 obj = null;
                                 foreach (var index in indexObject.AssetMap)
@@ -413,19 +417,20 @@ namespace AssetStudio
                                     mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                                 }
                                 asset.Name = "IndexObject";
-                                exportable = !Minimal;
+                                exportable = ClassIDType.IndexObject.CanExport();
                                 break;
-                            case ClassIDType.Font:
-                            case ClassIDType.Material:
-                            case ClassIDType.Texture:
-                            case ClassIDType.Mesh:
-                            case ClassIDType.Sprite:
-                            case ClassIDType.TextAsset:
-                            case ClassIDType.Texture2D:
-                            case ClassIDType.VideoClip:
-                            case ClassIDType.AudioClip:
-                            case ClassIDType.AnimationClip when AnimationClip.Parsable:
+                            case ClassIDType.Font when ClassIDType.Font.CanExport():
+                            case ClassIDType.Material when ClassIDType.Material.CanExport():
+                            case ClassIDType.Texture when ClassIDType.Texture.CanExport():
+                            case ClassIDType.Mesh when ClassIDType.Mesh.CanExport():
+                            case ClassIDType.Sprite when ClassIDType.Sprite.CanExport():
+                            case ClassIDType.TextAsset when ClassIDType.TextAsset.CanExport():
+                            case ClassIDType.Texture2D when ClassIDType.Texture2D.CanExport():
+                            case ClassIDType.VideoClip when ClassIDType.VideoClip.CanExport():
+                            case ClassIDType.AudioClip when ClassIDType.AudioClip.CanExport():
+                            case ClassIDType.AnimationClip when ClassIDType.AnimationClip.CanExport():
                                 asset.Name = objectReader.ReadAlignedString();
+                                exportable = true;
                                 break;
                             default:
                                 asset.Name = objectReader.type.ToString();
@@ -528,7 +533,7 @@ namespace AssetStudio
             }
         }
 
-        private static void ExportAssetsMap(AssetEntry[] toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
+        private static void ExportAssetsMap(List<AssetEntry> toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
         {
             ThreadPool.QueueUserWorkItem(state =>
             {
@@ -588,7 +593,7 @@ namespace AssetStudio
                         MessagePackSerializer.Serialize(file, assetMap, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));
                     }
 
-                    Logger.Info($"Finished buidling AssetMap with {toExportAssets.Length} assets.");
+                    Logger.Info($"Finished buidling AssetMap with {toExportAssets.Count} assets.");
                 }
 
                 resetEvent?.Set();
@@ -613,7 +618,7 @@ namespace AssetStudio
             DumpCABMap(mapName);
 
             Logger.Info($"Map build successfully !! {collision} collisions found");
-            ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
+            ExportAssetsMap(assets, game, mapName, savePath, exportListType, resetEvent);
         }
     }
 }

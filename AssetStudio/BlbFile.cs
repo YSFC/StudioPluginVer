@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using K4os.Compression.LZ4;
 
 namespace AssetStudio
 {
@@ -9,11 +10,11 @@ namespace AssetStudio
     {
         private const uint DefaultUncompressedSize = 0x20000;
 
-        private BundleFile.StorageBlock[] m_BlocksInfo;
-        private BundleFile.Node[] m_DirectoryInfo;
+        private List<BundleFile.StorageBlock> m_BlocksInfo;
+        private List<BundleFile.Node> m_DirectoryInfo;
 
         public BundleFile.Header m_Header;
-        public StreamFile[] fileList;
+        public List<StreamFile> fileList;
         public long Offset;
 
 
@@ -69,30 +70,30 @@ namespace AssetStudio
             var bundleInfoOffset = reader.Position + reader.ReadInt64();
 
             reader.Position = blocksInfoOffset;
-            m_BlocksInfo = new BundleFile.StorageBlock[blocksInfoCount];
+            m_BlocksInfo = new List<BundleFile.StorageBlock>();
             Logger.Verbose($"Blocks count: {blocksInfoCount}");
             for (int i = 0; i < blocksInfoCount; i++)
             {
-                m_BlocksInfo[i] = new BundleFile.StorageBlock
+                m_BlocksInfo.Add(new BundleFile.StorageBlock
                 {
                     compressedSize = reader.ReadUInt32(),
                     uncompressedSize = i == blocksInfoCount - 1 ? lastUncompressedSize : DefaultUncompressedSize,
                     flags = (StorageBlockFlags)0x43
-                };
+                });
 
                 Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
             }
 
             reader.Position = nodesInfoOffset;
-            m_DirectoryInfo = new BundleFile.Node[nodesCount];
+            m_DirectoryInfo = new List<BundleFile.Node>();
             Logger.Verbose($"Directory count: {nodesCount}");
             for (int i = 0; i < nodesCount; i++)
             {
-                m_DirectoryInfo[i] = new BundleFile.Node
+                m_DirectoryInfo.Add(new BundleFile.Node
                 {
                     offset = reader.ReadInt32(),
                     size = reader.ReadInt32()
-                };
+                });
 
                 var pathOffset = reader.Position + reader.ReadInt64();
 
@@ -124,22 +125,28 @@ namespace AssetStudio
                 var compressedSize = (int)blockInfo.compressedSize;
                 var uncompressedSize = (int)blockInfo.uncompressedSize;
 
-                var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
-                var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
-                reader.Read(compressedBytes, 0, compressedSize);
-
-                var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
-                var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
-
-                var numWrite = LZ4Codec.Decode(compressedBytesSpan, uncompressedBytesSpan);
-                if (numWrite != uncompressedSize)
+                var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
+                var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
+                try
                 {
-                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
-                }
+                    reader.Read(compressedBytes, 0, compressedSize);
 
-                blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
-                BigArrayPool<byte>.Shared.Return(compressedBytes);
-                BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                    var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
+                    var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
+
+                    var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                    if (numWrite != uncompressedSize)
+                    {
+                        throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                    }
+
+                    blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(compressedBytes, true);
+                    ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                }
             }
         }
 
@@ -147,12 +154,12 @@ namespace AssetStudio
         {
             Logger.Verbose($"Writing files from blocks stream...");
 
-            fileList = new StreamFile[m_DirectoryInfo.Length];
-            for (int i = 0; i < m_DirectoryInfo.Length; i++)
+            fileList = new List<StreamFile>();
+            for (int i = 0; i < m_DirectoryInfo.Count; i++)
             {
                 var node = m_DirectoryInfo[i];
                 var file = new StreamFile();
-                fileList[i] = file;
+                fileList.Add(file);
                 file.path = node.path;
                 file.fileName = Path.GetFileName(node.path);
                 if (node.size >= int.MaxValue)

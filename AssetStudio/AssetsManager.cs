@@ -157,6 +157,9 @@ namespace AssetStudio
                 case FileType.BlkFile:
                     LoadBlkFile(reader);
                     break;
+                case FileType.MhyFile:
+                    LoadMhyFile(reader);
+                    break;
             }
         }
 
@@ -399,6 +402,7 @@ namespace AssetStudio
                             streamReader.Position = 0;
 
                             FileReader entryReader = new FileReader(dummyPath, streamReader);
+                            entryReader = entryReader.PreProcessing(Game);
                             LoadFile(entryReader);
                             if (entryReader.FileType == FileType.ResourceFile)
                             {
@@ -448,6 +452,9 @@ namespace AssetStudio
                         case FileType.BlbFile:
                             LoadBlbFile(subReader, reader.FullPath, offset, false);
                             break;
+                        case FileType.MhyFile:
+                            LoadMhyFile(subReader, reader.FullPath, offset, false);
+                            break;
                     }
                 }    
             }
@@ -478,8 +485,8 @@ namespace AssetStudio
                         case FileType.BundleFile:
                             LoadBundleFile(subReader, reader.FullPath, offset, false);
                             break;
-                        case FileType.Mhy0File:
-                            LoadMhy0File(subReader, reader.FullPath, offset, false);
+                        case FileType.MhyFile:
+                            LoadMhyFile(subReader, reader.FullPath, offset, false);
                             break;
                     }
                 }
@@ -497,7 +504,7 @@ namespace AssetStudio
                 reader.Dispose();
             }
         }
-        private void LoadMhy0File(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
+        private void LoadMhyFile(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
         {
             if (log)
             {
@@ -505,15 +512,15 @@ namespace AssetStudio
             }
             try
             {
-                var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);
-                Logger.Verbose($"mhy0 total size: {mhy0File.TotalSize:X8}");
-                foreach (var file in mhy0File.fileList)
+                var mhyFile = new MhyFile(reader, (Mhy)Game);
+                Logger.Verbose($"mhy total size: {mhyFile.m_Header.size:X8}");
+                foreach (var file in mhyFile.fileList)
                 {
                     var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
                     var cabReader = new FileReader(dummyPath, file.stream);
                     if (cabReader.FileType == FileType.AssetsFile)
                     {
-                        LoadAssetsFromMemory(cabReader, originalPath ?? reader.FullPath, mhy0File.m_Header.unityRevision, originalOffset);
+                        LoadAssetsFromMemory(cabReader, originalPath ?? reader.FullPath, mhyFile.m_Header.unityRevision, originalOffset);
                     }
                     else
                     {
@@ -524,11 +531,11 @@ namespace AssetStudio
             }
             catch (InvalidCastException)
             {
-                Logger.Error($"Game type mismatch, Expected {nameof(Mhy0)} but got {Game.Name} ({Game.GetType().Name}) !!");
+                Logger.Error($"Game type mismatch, Expected {nameof(Mhy)} but got {Game.Name} ({Game.GetType().Name}) !!");
             }
             catch (Exception e)
             {
-                var str = $"Error while reading mhy0 file {reader.FullPath}";
+                var str = $"Error while reading mhy file {reader.FullPath}";
                 if (originalPath != null)
                 {
                     str += $" from {Path.GetFileName(originalPath)}";
@@ -639,36 +646,36 @@ namespace AssetStudio
                     {
                         Object obj = objectReader.type switch
                         {
-                            ClassIDType.Animation => new Animation(objectReader),
-                            ClassIDType.AnimationClip when AnimationClip.Parsable => new AnimationClip(objectReader),
-                            ClassIDType.Animator => new Animator(objectReader),
-                            ClassIDType.AnimatorController => new AnimatorController(objectReader),
-                            ClassIDType.AnimatorOverrideController => new AnimatorOverrideController(objectReader),
-                            ClassIDType.AssetBundle => new AssetBundle(objectReader),
-                            ClassIDType.AudioClip => new AudioClip(objectReader),
-                            ClassIDType.Avatar => new Avatar(objectReader),
-                            ClassIDType.Font => new Font(objectReader),
-                            ClassIDType.GameObject => new GameObject(objectReader),
-                            ClassIDType.IndexObject => new IndexObject(objectReader),
-                            ClassIDType.Material => new Material(objectReader),
-                            ClassIDType.Mesh => new Mesh(objectReader),
-                            ClassIDType.MeshFilter => new MeshFilter(objectReader),
-                            ClassIDType.MeshRenderer when Renderer.Parsable => new MeshRenderer(objectReader),
-                            ClassIDType.MiHoYoBinData => new MiHoYoBinData(objectReader),
-                            ClassIDType.MonoBehaviour => new MonoBehaviour(objectReader),
-                            ClassIDType.MonoScript => new MonoScript(objectReader),
-                            ClassIDType.MovieTexture => new MovieTexture(objectReader),
-                            ClassIDType.PlayerSettings => new PlayerSettings(objectReader),
-                            ClassIDType.RectTransform => new RectTransform(objectReader),
-                            ClassIDType.Shader when Shader.Parsable => new Shader(objectReader),
-                            ClassIDType.SkinnedMeshRenderer when Renderer.Parsable => new SkinnedMeshRenderer(objectReader),
-                            ClassIDType.Sprite => new Sprite(objectReader),
-                            ClassIDType.SpriteAtlas => new SpriteAtlas(objectReader),
-                            ClassIDType.TextAsset => new TextAsset(objectReader),
-                            ClassIDType.Texture2D => new Texture2D(objectReader),
-                            ClassIDType.Transform => new Transform(objectReader),
-                            ClassIDType.VideoClip => new VideoClip(objectReader),
-                            ClassIDType.ResourceManager => new ResourceManager(objectReader),
+                            ClassIDType.Animation when ClassIDType.Animation.CanParse() => new Animation(objectReader),
+                            ClassIDType.AnimationClip when ClassIDType.AnimationClip.CanParse() => new AnimationClip(objectReader),
+                            ClassIDType.Animator when ClassIDType.Animator.CanParse() => new Animator(objectReader),
+                            ClassIDType.AnimatorController when ClassIDType.AnimatorController.CanParse() => new AnimatorController(objectReader),
+                            ClassIDType.AnimatorOverrideController when ClassIDType.AnimatorOverrideController.CanParse() => new AnimatorOverrideController(objectReader),
+                            ClassIDType.AssetBundle when ClassIDType.AssetBundle.CanParse() => new AssetBundle(objectReader),
+                            ClassIDType.AudioClip when ClassIDType.AudioClip.CanParse() => new AudioClip(objectReader),
+                            ClassIDType.Avatar when ClassIDType.Avatar.CanParse() => new Avatar(objectReader),
+                            ClassIDType.Font when ClassIDType.Font.CanParse() => new Font(objectReader),
+                            ClassIDType.GameObject when ClassIDType.GameObject.CanParse() => new GameObject(objectReader),
+                            ClassIDType.IndexObject when ClassIDType.IndexObject.CanParse() => new IndexObject(objectReader),
+                            ClassIDType.Material when ClassIDType.Material.CanParse() => new Material(objectReader),
+                            ClassIDType.Mesh when ClassIDType.Mesh.CanParse() => new Mesh(objectReader),
+                            ClassIDType.MeshFilter when ClassIDType.MeshFilter.CanParse() => new MeshFilter(objectReader),
+                            ClassIDType.MeshRenderer when ClassIDType.MeshRenderer.CanParse() => new MeshRenderer(objectReader),
+                            ClassIDType.MiHoYoBinData when ClassIDType.MiHoYoBinData.CanParse() => new MiHoYoBinData(objectReader),
+                            ClassIDType.MonoBehaviour when ClassIDType.MonoBehaviour.CanParse() => new MonoBehaviour(objectReader),
+                            ClassIDType.MonoScript when ClassIDType.MonoScript.CanParse() => new MonoScript(objectReader),
+                            ClassIDType.MovieTexture when ClassIDType.MovieTexture.CanParse() => new MovieTexture(objectReader),
+                            ClassIDType.PlayerSettings when ClassIDType.PlayerSettings.CanParse() => new PlayerSettings(objectReader),
+                            ClassIDType.RectTransform when ClassIDType.RectTransform.CanParse() => new RectTransform(objectReader),
+                            ClassIDType.Shader when ClassIDType.Shader.CanParse() => new Shader(objectReader),
+                            ClassIDType.SkinnedMeshRenderer when ClassIDType.SkinnedMeshRenderer.CanParse() => new SkinnedMeshRenderer(objectReader),
+                            ClassIDType.Sprite when ClassIDType.Sprite.CanParse() => new Sprite(objectReader),
+                            ClassIDType.SpriteAtlas when ClassIDType.SpriteAtlas.CanParse() => new SpriteAtlas(objectReader),
+                            ClassIDType.TextAsset when ClassIDType.TextAsset.CanParse() => new TextAsset(objectReader),
+                            ClassIDType.Texture2D when ClassIDType.Texture2D.CanParse() => new Texture2D(objectReader),
+                            ClassIDType.Transform when ClassIDType.Transform.CanParse() => new Transform(objectReader),
+                            ClassIDType.VideoClip when ClassIDType.VideoClip.CanParse() => new VideoClip(objectReader),
+                            ClassIDType.ResourceManager when ClassIDType.ResourceManager.CanParse() => new ResourceManager(objectReader),
                             _ => new Object(objectReader),
                         };
                         assetsFile.AddObject(obj);
@@ -705,7 +712,7 @@ namespace AssetStudio
                     }
                     if (obj is GameObject m_GameObject)
                     {
-                        Logger.Verbose($"GameObject with {m_GameObject.m_PathID} in file {m_GameObject.assetsFile.fileName} has {m_GameObject.m_Components.Length} components, Attempting to fetch them...");
+                        Logger.Verbose($"GameObject with {m_GameObject.m_PathID} in file {m_GameObject.assetsFile.fileName} has {m_GameObject.m_Components.Count} components, Attempting to fetch them...");
                         foreach (var pptr in m_GameObject.m_Components)
                         {
                             if (pptr.TryGet(out var m_Component))
@@ -744,7 +751,7 @@ namespace AssetStudio
                     {
                         if (m_SpriteAtlas.m_RenderDataMap.Count > 0)
                         {
-                            Logger.Verbose($"SpriteAtlas with {m_SpriteAtlas.m_PathID} in file {m_SpriteAtlas.assetsFile.fileName} has {m_SpriteAtlas.m_PackedSprites.Length} packed sprites, Attempting to fetch them...");
+                            Logger.Verbose($"SpriteAtlas with {m_SpriteAtlas.m_PathID} in file {m_SpriteAtlas.assetsFile.fileName} has {m_SpriteAtlas.m_PackedSprites.Count} packed sprites, Attempting to fetch them...");
                             foreach (var m_PackedSprite in m_SpriteAtlas.m_PackedSprites)
                             {
                                 if (m_PackedSprite.TryGet(out var m_Sprite))

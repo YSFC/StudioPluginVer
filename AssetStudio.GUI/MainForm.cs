@@ -103,28 +103,23 @@ namespace AssetStudio.GUI
         {
             enableConsole.Checked = Properties.Settings.Default.enableConsole;
             enableFileLogging.Checked = Properties.Settings.Default.enableFileLogging;
-            enableVerbose.Checked = Properties.Settings.Default.enableVerbose;
             displayAll.Checked = Properties.Settings.Default.displayAll;
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
             enableModelPreview.Checked = Properties.Settings.Default.enableModelPreview;
             modelsOnly.Checked = Properties.Settings.Default.modelsOnly;
             enableResolveDependencies.Checked = Properties.Settings.Default.enableResolveDependencies;
+            allowDuplicates.Checked = Properties.Settings.Default.allowDuplicates;
             skipContainer.Checked = Properties.Settings.Default.skipContainer;
             assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
             SkipContainer = Properties.Settings.Default.skipContainer;
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
-            Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
-            Shader.Parsable = !Properties.Settings.Default.disableShader;
-            AnimationClip.Parsable = !Properties.Settings.Default.disableAnimationClip;
         }
 
         private void InitializeLogger()
         {
-            Logger.LogVerbose = enableVerbose.Checked;
-            Logger.FileLogging = enableFileLogging.Checked;
             logger = new GUILogger(StatusStripUpdate);
             ConsoleHelper.AllocConsole();
             ConsoleHelper.SetConsoleTitle("Debug Console");
@@ -139,6 +134,15 @@ namespace AssetStudio.GUI
                 Logger.Default = logger;
                 ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_HIDE);
             }
+            var loggerEventType = (LoggerEvent)Properties.Settings.Default.loggerEventType;
+            var loggerEventTypes = Enum.GetValues<LoggerEvent>().ToArray()[1..^1];
+            foreach (var loggerEvent in loggerEventTypes)
+            {
+                var menuItem = new ToolStripMenuItem(loggerEvent.ToString()) { CheckOnClick = true, Checked = loggerEventType.HasFlag(loggerEvent), Tag = (int)loggerEvent };
+                loggedEventsMenuItem.DropDownItems.Add(menuItem);
+            }
+            Logger.Default.Flags = loggerEventType;
+            Logger.FileLogging = enableFileLogging.Checked;
         }
 
         private void InitializeProgressBar()
@@ -161,6 +165,7 @@ namespace AssetStudio.GUI
             specifyGame.SelectedIndex = Properties.Settings.Default.selectedGame;
             specifyGame.SelectedIndexChanged += new EventHandler(specifyGame_SelectedIndexChanged);
             Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
+            TypeFlags.SetTypes(JsonConvert.DeserializeObject<Dictionary<ClassIDType, (bool, bool)>>(Properties.Settings.Default.types));
             Logger.Info($"Target Game type is {Studio.Game.Type}");
 
             if (Studio.Game.Type.IsUnityCN())
@@ -175,6 +180,10 @@ namespace AssetStudio.GUI
                 {
                     Properties.Settings.Default.selectedCABMapName = "";
                     Properties.Settings.Default.Save();
+                }
+                else
+                {
+                    MapNameComboBox.Text = Properties.Settings.Default.selectedCABMapName;
                 }
             }
         }
@@ -546,7 +555,12 @@ namespace AssetStudio.GUI
         private void showExpOpt_Click(object sender, EventArgs e)
         {
             var exportOpt = new ExportOptions();
-            exportOpt.ShowDialog(this);
+            if (exportOpt.ShowDialog(this) == DialogResult.OK && exportOpt.Resetted)
+            {
+                InitializeExportOptions();
+                InitializeLogger();
+                InitalizeOptions();
+            }
         }
 
         private void assetListView_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
@@ -1298,12 +1312,28 @@ namespace AssetStudio.GUI
 
         private void PreviewGameObject(GameObject m_GameObject)
         {
-            var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            var options = new ModelConverter.Options()
+            {
+                imageFormat = Properties.Settings.Default.convertType,
+                game = Studio.Game,
+                collectAnimations = Properties.Settings.Default.collectAnimations,
+                uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+            };
+            var model = new ModelConverter(m_GameObject, options, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
         private void PreviewAnimator(Animator m_Animator)
         {
-            var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            var options = new ModelConverter.Options()
+            {
+                imageFormat = Properties.Settings.Default.convertType,
+                game = Studio.Game,
+                collectAnimations = Properties.Settings.Default.collectAnimations,
+                uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+            };
+            var model = new ModelConverter(m_Animator, options, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
 
@@ -1430,7 +1460,9 @@ namespace AssetStudio.GUI
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(() => { progressBar1.Value = value; }));
+                
+                var result = BeginInvoke(new Action(() => { progressBar1.Value = value; }));
+                result.AsyncWaitHandle.WaitOne();
             }
             else
             {
@@ -1442,7 +1474,8 @@ namespace AssetStudio.GUI
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(() => { toolStripStatusLabel1.Text = statusText; }));
+                var result = BeginInvoke(() => { toolStripStatusLabel1.Text = statusText; });
+                result.AsyncWaitHandle.WaitOne();
             }
             else
             {
@@ -2043,13 +2076,17 @@ namespace AssetStudio.GUI
 
             assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
         }
+        private void allowDuplicates_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.allowDuplicates = allowDuplicates.Checked;
+            Properties.Settings.Default.Save();
+        }
         private void skipContainer_CheckedChanged(object sender, EventArgs e)
         {
             Properties.Settings.Default.skipContainer = skipContainer.Checked;
             Properties.Settings.Default.Save();
 
             SkipContainer = skipContainer.Checked;
-
         }
         private void assetMapTypeMenuItem_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
@@ -2309,12 +2346,20 @@ namespace AssetStudio.GUI
             Logger.FileLogging = enableFileLogging.Checked;
         }
 
-        private void enableVerbose_Click(object sender, EventArgs e)
+        private void loggedEventsMenuItem_DropDownClosing(object sender, ToolStripDropDownClosingEventArgs e)
         {
-            Properties.Settings.Default.enableVerbose = enableVerbose.Checked;
+            if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked)
+            {
+                e.Cancel = true;
+            }
+        }
+
+        private void loggedEventsMenuItem_DropDownClosed(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.loggerEventType = loggedEventsMenuItem.DropDownItems.Cast<ToolStripMenuItem>().Select(x => x.Checked ? (int)x.Tag : 0).Sum();
             Properties.Settings.Default.Save();
 
-            Logger.LogVerbose = enableVerbose.Checked;
+            Logger.Default.Flags = (LoggerEvent)Properties.Settings.Default.loggerEventType;
         }
 
         private void abortStripMenuItem_Click(object sender, EventArgs e)

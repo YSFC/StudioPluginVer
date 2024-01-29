@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -80,36 +81,15 @@ namespace AssetStudio
             }
             else
             {
-                using var reader = new FileReader(path, this, true);
-                var signature = reader.FileType switch
-                {
-                    FileType.BundleFile => "UnityFS\x00",
-                    FileType.BlbFile => "Blb\x02",
-                    FileType.Mhy0File => "mhy0",
-                    FileType.ENCRFile => "ENCR\x00",
-                    _ => throw new InvalidOperationException()
-                };
-
-                Logger.Verbose($"Prased signature: {signature}");
-
-                var signatureBytes = Encoding.UTF8.GetBytes(signature);
-                var buffer = BigArrayPool<byte>.Shared.Rent(BufferSize);
                 while (Remaining > 0)
                 {
-                    var index = 0;
-                    var absOffset = AbsolutePosition;
-                    var read = Read(buffer);
-                    while (index < read)
+                    Offset = AbsolutePosition;
+                    yield return AbsolutePosition;
+                    if (Offset == AbsolutePosition)
                     {
-                        index = buffer.AsSpan(0, read).Search(signatureBytes, index);
-                        if (index == -1) break;
-                        var offset = absOffset + index;
-                        Offset = offset;
-                        yield return offset;
-                        index++;
+                        break;
                     }
                 }
-                BigArrayPool<byte>.Shared.Return(buffer);
             }
         }
     }

@@ -51,6 +51,7 @@ namespace AssetStudio.GUI
             toolStripSeparator11 = new System.Windows.Forms.ToolStripSeparator();
             displayInfo = new System.Windows.Forms.ToolStripMenuItem();
             enableResolveDependencies = new System.Windows.Forms.ToolStripMenuItem();
+            allowDuplicates = new System.Windows.Forms.ToolStripMenuItem();
             skipContainer = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator12 = new System.Windows.Forms.ToolStripSeparator();
             toolStripMenuItem14 = new System.Windows.Forms.ToolStripMenuItem();
@@ -105,7 +106,7 @@ namespace AssetStudio.GUI
             enableConsole = new System.Windows.Forms.ToolStripMenuItem();
             clearConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             enableFileLogging = new System.Windows.Forms.ToolStripMenuItem();
-            enableVerbose = new System.Windows.Forms.ToolStripMenuItem();
+            loggedEventsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             miscToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             MapNameComboBox = new System.Windows.Forms.ToolStripComboBox();
             buildMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -117,6 +118,7 @@ namespace AssetStudio.GUI
             assetMapTypeMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
             loadAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            loadCABMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             assetBrowserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             assetHelpersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             MapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -172,7 +174,6 @@ namespace AssetStudio.GUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            loadCABMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -264,7 +265,7 @@ namespace AssetStudio.GUI
             // 
             // optionsToolStripMenuItem
             // 
-            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, toolStripSeparator10, enablePreview, enableModelPreview, modelsOnly, toolStripSeparator11, displayInfo, enableResolveDependencies, skipContainer, toolStripSeparator12, toolStripMenuItem14, specifyUnityCNKey, toolStripSeparator13, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
+            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, toolStripSeparator10, enablePreview, enableModelPreview, modelsOnly, toolStripSeparator11, displayInfo, enableResolveDependencies, allowDuplicates, skipContainer, toolStripSeparator12, toolStripMenuItem14, specifyUnityCNKey, toolStripSeparator13, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
             optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
             optionsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             optionsToolStripMenuItem.Text = "Options";
@@ -336,6 +337,15 @@ namespace AssetStudio.GUI
             enableResolveDependencies.Text = "Enable resolve dependencies";
             enableResolveDependencies.ToolTipText = "Toggle the behaviour of loading assets.\r\nDisable to load file(s) without its dependencies.";
             enableResolveDependencies.CheckedChanged += enableResolveDependencies_CheckedChanged;
+            // 
+            // allowDuplicates
+            // 
+            allowDuplicates.CheckOnClick = true;
+            allowDuplicates.Name = "allowDuplicates";
+            allowDuplicates.Size = new System.Drawing.Size(225, 22);
+            allowDuplicates.Text = "Allow duplicates";
+            allowDuplicates.ToolTipText = "Toggle the behaviour of exporting assets.\r\nEnable to allow assets with duplicate names to be exported.";
+            allowDuplicates.CheckedChanged += allowDuplicates_CheckedChanged;
             // 
             // skipContainer
             // 
@@ -659,13 +669,13 @@ namespace AssetStudio.GUI
             allToolStripMenuItem.CheckOnClick = true;
             allToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             allToolStripMenuItem.Name = "allToolStripMenuItem";
-            allToolStripMenuItem.Size = new System.Drawing.Size(88, 22);
+            allToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             allToolStripMenuItem.Text = "All";
             allToolStripMenuItem.Click += typeToolStripMenuItem_Click;
             // 
             // debugMenuItem
             // 
-            debugMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripMenuItem15, exportClassStructuresMenuItem, enableConsole, clearConsoleToolStripMenuItem, enableFileLogging, enableVerbose });
+            debugMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripMenuItem15, exportClassStructuresMenuItem, enableConsole, clearConsoleToolStripMenuItem, enableFileLogging, loggedEventsMenuItem });
             debugMenuItem.Name = "debugMenuItem";
             debugMenuItem.Size = new System.Drawing.Size(54, 20);
             debugMenuItem.Text = "Debug";
@@ -714,13 +724,13 @@ namespace AssetStudio.GUI
             enableFileLogging.Text = "Enable file logging";
             enableFileLogging.CheckedChanged += enableFileLogging_CheckedChanged;
             // 
-            // enableVerbose
+            // loggedEventsMenuItem
             // 
-            enableVerbose.CheckOnClick = true;
-            enableVerbose.Name = "enableVerbose";
-            enableVerbose.Size = new System.Drawing.Size(191, 22);
-            enableVerbose.Text = "Enable Verbose";
-            enableVerbose.CheckedChanged += enableVerbose_Click;
+            loggedEventsMenuItem.Name = "loggedEventsMenuItem";
+            loggedEventsMenuItem.Size = new System.Drawing.Size(191, 22);
+            loggedEventsMenuItem.Text = "Logged events";
+            loggedEventsMenuItem.DropDown.Closing += loggedEventsMenuItem_DropDownClosing;
+            loggedEventsMenuItem.DropDownClosed += loggedEventsMenuItem_DropDownClosed;
             // 
             // miscToolStripMenuItem
             // 
@@ -793,6 +803,13 @@ namespace AssetStudio.GUI
             loadAIToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
             loadAIToolStripMenuItem.Text = "Load AI";
             loadAIToolStripMenuItem.Click += loadAIToolStripMenuItem_Click;
+            // 
+            // loadCABMapToolStripMenuItem
+            // 
+            loadCABMapToolStripMenuItem.Name = "loadCABMapToolStripMenuItem";
+            loadCABMapToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
+            loadCABMapToolStripMenuItem.Text = "Load CABMap";
+            loadCABMapToolStripMenuItem.Click += loadCABMapToolStripMenuItem_Click;
             // 
             // assetBrowserToolStripMenuItem
             // 
@@ -1203,7 +1220,7 @@ namespace AssetStudio.GUI
             // glControl
             // 
             glControl.API = OpenTK.Windowing.Common.ContextAPI.OpenGL;
-            glControl.APIVersion = new Version(4, 5, 0, 0);
+            glControl.APIVersion = new Version(3, 3, 0, 0);
             glControl.BackColor = System.Drawing.SystemColors.ControlDarkDark;
             glControl.Dock = System.Windows.Forms.DockStyle.Fill;
             glControl.Flags = OpenTK.Windowing.Common.ContextFlags.Default;
@@ -1344,13 +1361,6 @@ namespace AssetStudio.GUI
             showOriginalFileToolStripMenuItem.Text = "Show original file";
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
-            // 
-            // loadCABMapToolStripMenuItem
-            // 
-            loadCABMapToolStripMenuItem.Name = "loadCABMapToolStripMenuItem";
-            loadCABMapToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
-            loadCABMapToolStripMenuItem.Text = "Load CABMap";
-            loadCABMapToolStripMenuItem.Click += loadCABMapToolStripMenuItem_Click;
             // 
             // MainForm
             // 
@@ -1538,10 +1548,11 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ToolStripMenuItem specifyUnityCNKey;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator13;
         private System.Windows.Forms.ToolStripMenuItem enableFileLogging;
-        private System.Windows.Forms.ToolStripMenuItem enableVerbose;
+        private System.Windows.Forms.ToolStripMenuItem loggedEventsMenuItem;
         private System.Windows.Forms.ToolStripMenuItem sceneHierarchy;
         private System.Windows.Forms.ToolStripMenuItem assetMapTypeMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadCABMapToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem allowDuplicates;
     }
 }
 

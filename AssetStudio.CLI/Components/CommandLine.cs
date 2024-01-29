@@ -21,7 +21,7 @@ namespace AssetStudio.CLI
             var rootCommand = new RootCommand()
             {
                 optionsBinder.Silent,
-                optionsBinder.Verbose,
+                optionsBinder.LoggerFlags,
                 optionsBinder.TypeFilter,
                 optionsBinder.NameFilter,
                 optionsBinder.ContainerFilter,
@@ -32,7 +32,7 @@ namespace AssetStudio.CLI
                 optionsBinder.MapName,
                 optionsBinder.UnityVersion,
                 optionsBinder.GroupAssetsType,
-                optionsBinder.Model,
+                optionsBinder.AssetExportType,
                 optionsBinder.Key,
                 optionsBinder.AIFile,
                 optionsBinder.DummyDllFolder,
@@ -48,7 +48,7 @@ namespace AssetStudio.CLI
     public class Options
     {
         public bool Silent { get; set; }
-        public bool Verbose { get; set; }
+        public LoggerEvent[] LoggerFlags { get; set; }
         public ClassIDType[] TypeFilter { get; set; }
         public Regex[] NameFilter { get; set; }
         public Regex[] ContainerFilter { get; set; }
@@ -59,7 +59,7 @@ namespace AssetStudio.CLI
         public string MapName { get; set; }
         public string UnityVersion { get; set; }
         public AssetGroupOption GroupAssetsType { get; set; }
-        public bool Model { get; set; }
+        public ExportType AssetExportType { get; set; }
         public byte Key { get; set; }
         public FileInfo AIFile { get; set; }
         public DirectoryInfo DummyDllFolder { get; set; }
@@ -70,7 +70,7 @@ namespace AssetStudio.CLI
     public class OptionsBinder : BinderBase<Options>
     {
         public readonly Option<bool> Silent;
-        public readonly Option<bool> Verbose;
+        public readonly Option<LoggerEvent[]> LoggerFlags;
         public readonly Option<ClassIDType[]> TypeFilter;
         public readonly Option<Regex[]> NameFilter;
         public readonly Option<Regex[]> ContainerFilter;
@@ -81,18 +81,17 @@ namespace AssetStudio.CLI
         public readonly Option<string> MapName;
         public readonly Option<string> UnityVersion;
         public readonly Option<AssetGroupOption> GroupAssetsType;
-        public readonly Option<bool> Model;
+        public readonly Option<ExportType> AssetExportType;
         public readonly Option<byte> Key;
         public readonly Option<FileInfo> AIFile;
         public readonly Option<DirectoryInfo> DummyDllFolder;
         public readonly Argument<FileInfo> Input;
         public readonly Argument<DirectoryInfo> Output;
 
-
         public OptionsBinder()
         {
             Silent = new Option<bool>("--silent", "Hide log messages.");
-            Verbose = new Option<bool>("--verbose", "Enable verbose logging.");
+            LoggerFlags = new Option<LoggerEvent[]>("--logger_flags", "Flags to control toggle log events.") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Verbose|Debug|Info|etc.." };
             TypeFilter = new Option<ClassIDType[]>("--types", "Specify unity class type(s)") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Texture2D|Sprite|etc.." };
             NameFilter = new Option<Regex[]>("--names", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify name regex filter(s).") { AllowMultipleArgumentsPerToken = true };
             ContainerFilter = new Option<Regex[]>("--containers", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify container regex filter(s).") { AllowMultipleArgumentsPerToken = true };
@@ -103,7 +102,7 @@ namespace AssetStudio.CLI
             MapName = new Option<string>("--map_name", () => "assets_map", "Specify AssetMap file name.");
             UnityVersion = new Option<string>("--unity_version", "Specify Unity version.");
             GroupAssetsType = new Option<AssetGroupOption>("--group_assets", "Specify how exported assets should be grouped.");
-            Model = new Option<bool>("--models", "Enable to export models only");
+            AssetExportType = new Option<ExportType>("--export_type", "Specify how assets should be exported.");
             AIFile = new Option<FileInfo>("--ai_file", "Specify asset_index json file path (to recover GI containers).").LegalFilePathsOnly();
             DummyDllFolder = new Option<DirectoryInfo>("--dummy_dlls", "Specify DummyDll path.").LegalFilePathsOnly();
             Input = new Argument<FileInfo>("input_path", "Input file/folder.").LegalFilePathsOnly();
@@ -123,6 +122,7 @@ namespace AssetStudio.CLI
                 }
             }, false, "XOR key to decrypt MiHoYoBinData.");
 
+            LoggerFlags.AddValidator(FilterValidator);
             TypeFilter.AddValidator(FilterValidator);
             NameFilter.AddValidator(FilterValidator);
             ContainerFilter.AddValidator(FilterValidator);
@@ -149,7 +149,9 @@ namespace AssetStudio.CLI
 
             GameName.FromAmong(GameManager.GetGameNames());
 
+            LoggerFlags.SetDefaultValue(new LoggerEvent[] { LoggerEvent.Debug, LoggerEvent.Info, LoggerEvent.Warning, LoggerEvent.Error });
             GroupAssetsType.SetDefaultValue(AssetGroupOption.ByType);
+            AssetExportType.SetDefaultValue(ExportType.Convert);
             MapOp.SetDefaultValue(MapOpType.None);
             MapType.SetDefaultValue(ExportListType.XML);
             KeyIndex.SetDefaultValue(0);
@@ -182,7 +184,7 @@ namespace AssetStudio.CLI
         new()
         {
             Silent = bindingContext.ParseResult.GetValueForOption(Silent),
-            Verbose = bindingContext.ParseResult.GetValueForOption(Verbose),
+            LoggerFlags = bindingContext.ParseResult.GetValueForOption(LoggerFlags),
             TypeFilter = bindingContext.ParseResult.GetValueForOption(TypeFilter),
             NameFilter = bindingContext.ParseResult.GetValueForOption(NameFilter),
             ContainerFilter = bindingContext.ParseResult.GetValueForOption(ContainerFilter),
@@ -193,7 +195,7 @@ namespace AssetStudio.CLI
             MapName = bindingContext.ParseResult.GetValueForOption(MapName),
             UnityVersion = bindingContext.ParseResult.GetValueForOption(UnityVersion),
             GroupAssetsType = bindingContext.ParseResult.GetValueForOption(GroupAssetsType),
-            Model = bindingContext.ParseResult.GetValueForOption(Model),
+            AssetExportType = bindingContext.ParseResult.GetValueForOption(AssetExportType),
             Key = bindingContext.ParseResult.GetValueForOption(Key),
             AIFile = bindingContext.ParseResult.GetValueForOption(AIFile),
             DummyDllFolder = bindingContext.ParseResult.GetValueForOption(DummyDllFolder),

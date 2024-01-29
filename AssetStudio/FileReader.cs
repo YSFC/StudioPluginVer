@@ -83,7 +83,7 @@ namespace AssetStudio
                         Logger.Verbose($"Parsed signature does not match with expected signature {Convert.ToHexString(zipMagic)} or {Convert.ToHexString(zipSpannedMagic)}");
                         if (mhy0Magic.SequenceEqual(magic))
                         {
-                            return FileType.Mhy0File;
+                            return FileType.MhyFile;
                         }
                         Logger.Verbose($"Parsed signature does not match with expected signature {Convert.ToHexString(mhy0Magic)}");
                         if (blbMagic.SequenceEqual(magic))
@@ -211,6 +211,21 @@ namespace AssetStudio
                         break; 
                     case GameType.Reverse1999:
                         reader = DecryptReverse1999(reader);
+                        break;
+                    case GameType.JJKPhantomParade:
+                        reader = DecryptJJKPhantomParade(reader);
+                        break;
+                    case GameType.MuvLuvDimensions:
+                        reader = DecryptMuvLuvDimensions(reader);
+                        break;
+                    case GameType.PartyAnimals:
+                        reader = DecryptPartyAnimals(reader);
+                        break;
+                    case GameType.LoveAndDeepspace:
+                        reader = DecryptLoveAndDeepspace(reader);
+                        break;
+                    case GameType.SchoolGirlStrikers:
+                        reader = DecryptSchoolGirlStrikers(reader);
                         break;
                 }
             }

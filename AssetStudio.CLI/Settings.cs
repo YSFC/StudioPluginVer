@@ -36,11 +36,6 @@ namespace AssetStudio.CLI.Properties {
 
         public static Settings Default => defaultInstance;
 
-        public bool displayAll => AppSettings.Get("displayAll", false);
-        public bool enablePreview => AppSettings.Get("enablePreview", true);
-        public bool displayInfo => AppSettings.Get("displayInfo", true);
-        public bool openAfterExport => AppSettings.Get("openAfterExport", true);
-        public int assetGroupOption => AppSettings.Get("assetGroupOption", 0);
         public bool convertTexture => AppSettings.Get("convertTexture", true);
         public bool convertAudio => AppSettings.Get("convertAudio", true);
         public ImageFormat convertType => AppSettings.Get("convertType", ImageFormat.Png);
@@ -57,20 +52,12 @@ namespace AssetStudio.CLI.Properties {
         public bool exportBlendShape => AppSettings.Get("exportBlendShape", true);
         public bool castToBone => AppSettings.Get("castToBone", false);
         public bool restoreExtensionName => AppSettings.Get("restoreExtensionName", true);
-        public bool exportAllUvsAsDiffuseMaps => AppSettings.Get("exportAllUvsAsDiffuseMaps", false);
-        public bool exportUV0UV1 => AppSettings.Get("exportUV0UV1", false);
-        public bool encrypted => AppSettings.Get("encrypted", true);
-        public byte key => AppSettings.Get("key", (byte)0x93);
-        public int selectedGame => AppSettings.Get("selectedGame", 0);
-        public bool enableResolveDependencies => AppSettings.Get("enableResolveDependencies", true);
-        public int selectedCNUnityKey => AppSettings.Get("selectedCNUnityKey", 0);
-        public int selectedAssetMapType => AppSettings.Get("selectedAssetMapType", 0);
-        public bool exportMiHoYoBinData => AppSettings.Get("exportMiHoYoBinData", true);
-        public bool disableShader => AppSettings.Get("disableShader", false);
-        public bool disableRenderer => AppSettings.Get("disableRenderer", false);
-        public bool disableAnimationClip => AppSettings.Get("disableAnimationClip", false);
         public bool enableFileLogging => AppSettings.Get("enableFileLogging", false);
         public bool minimalAssetMap => AppSettings.Get("minimalAssetMap", true);
+        public bool allowDuplicates => AppSettings.Get("allowDuplicates", false);
+        public string types => AppSettings.Get("types", string.Empty);
+        public string texs => AppSettings.Get("texs", string.Empty);
+        public string uvs => AppSettings.Get("uvs", string.Empty);
 
     }
 }

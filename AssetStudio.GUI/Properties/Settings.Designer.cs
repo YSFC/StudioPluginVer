@@ -12,7 +12,7 @@ namespace AssetStudio.GUI.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.7.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.8.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -265,18 +265,6 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool exportAllUvsAsDiffuseMaps {
-            get {
-                return ((bool)(this["exportAllUvsAsDiffuseMaps"]));
-            }
-            set {
-                this["exportAllUvsAsDiffuseMaps"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("147")]
         public byte key {
             get {
@@ -337,7 +325,7 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
         public int assetMapType {
             get {
                 return ((int)(this["assetMapType"]));
@@ -368,42 +356,6 @@ namespace AssetStudio.GUI.Properties {
             }
             set {
                 this["skipContainer"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool exportUV0UV1 {
-            get {
-                return ((bool)(this["exportUV0UV1"]));
-            }
-            set {
-                this["exportUV0UV1"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool disableShader {
-            get {
-                return ((bool)(this["disableShader"]));
-            }
-            set {
-                this["disableShader"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool disableRenderer {
-            get {
-                return ((bool)(this["disableRenderer"]));
-            }
-            set {
-                this["disableRenderer"] = value;
             }
         }
         
@@ -469,18 +421,6 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool disableAnimationClip {
-            get {
-                return ((bool)(this["disableAnimationClip"]));
-            }
-            set {
-                this["disableAnimationClip"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool enableFileLogging {
             get {
@@ -493,13 +433,64 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool enableVerbose {
+        [global::System.Configuration.DefaultSettingValueAttribute("{\"UV0\":{\"Item1\":true,\"Item2\":0},\"UV1\":{\"Item1\":true,\"Item2\":1},\"UV2\":{\"Item1\":fal" +
+            "se,\"Item2\":0},\"UV3\":{\"Item1\":false,\"Item2\":0},\"UV4\":{\"Item1\":false,\"Item2\":0},\"U" +
+            "V5\":{\"Item1\":false,\"Item2\":0},\"UV6\":{\"Item1\":false,\"Item2\":0},\"UV7\":{\"Item1\":fal" +
+            "se,\"Item2\":0}}")]
+        public string uvs {
             get {
-                return ((bool)(this["enableVerbose"]));
+                return ((string)(this["uvs"]));
             }
             set {
-                this["enableVerbose"] = value;
+                this["uvs"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool allowDuplicates {
+            get {
+                return ((bool)(this["allowDuplicates"]));
+            }
+            set {
+                this["allowDuplicates"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public int loggerEventType {
+            get {
+                return ((int)(this["loggerEventType"]));
+            }
+            set {
+                this["loggerEventType"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute(@"{""Animation"":{""Item1"":true,""Item2"":false},""AnimationClip"":{""Item1"":true,""Item2"":true},""Animator"":{""Item1"":true,""Item2"":true},""AnimatorController"":{""Item1"":true,""Item2"":false},""AnimatorOverrideController"":{""Item1"":true,""Item2"":false},""AssetBundle"":{""Item1"":true,""Item2"":false},""AudioClip"":{""Item1"":true,""Item2"":true},""Avatar"":{""Item1"":true,""Item2"":false},""Font"":{""Item1"":true,""Item2"":true},""GameObject"":{""Item1"":true,""Item2"":false},""IndexObject"":{""Item1"":true,""Item2"":false},""Material"":{""Item1"":true,""Item2"":true},""Mesh"":{""Item1"":true,""Item2"":true},""MeshFilter"":{""Item1"":true,""Item2"":false},""MeshRenderer"":{""Item1"":true,""Item2"":false},""MiHoYoBinData"":{""Item1"":true,""Item2"":true},""MonoBehaviour"":{""Item1"":true,""Item2"":true},""MonoScript"":{""Item1"":true,""Item2"":false},""MovieTexture"":{""Item1"":true,""Item2"":true},""PlayerSettings"":{""Item1"":true,""Item2"":false},""RectTransform"":{""Item1"":true,""Item2"":false},""Shader"":{""Item1"":true,""Item2"":true},""SkinnedMeshRenderer"":{""Item1"":true,""Item2"":false},""Sprite"":{""Item1"":true,""Item2"":true},""SpriteAtlas"":{""Item1"":true,""Item2"":false},""TextAsset"":{""Item1"":true,""Item2"":true},""Texture2D"":{""Item1"":true,""Item2"":true},""Transform"":{""Item1"":true,""Item2"":false},""VideoClip"":{""Item1"":true,""Item2"":true},""ResourceManager"":{""Item1"":true,""Item2"":false}}")]
+        public string types {
+            get {
+                return ((string)(this["types"]));
+            }
+            set {
+                this["types"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string texs {
+            get {
+                return ((string)(this["texs"]));
+            }
+            set {
+                this["texs"] = value;
             }
         }
     }

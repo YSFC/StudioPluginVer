@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace AssetStudio
 {
@@ -13,49 +14,57 @@ namespace AssetStudio
             m_Texture = new PPtr<Texture>(reader);
             m_Scale = reader.ReadVector2();
             m_Offset = reader.ReadVector2();
+            if (reader.Game.Type.IsArknightsEndfield())
+            {
+                var m_UVSetIndex = reader.ReadInt32();
+            }
         }
     }
 
     public class UnityPropertySheet
     {
-        public Dictionary<string, UnityTexEnv> m_TexEnvs;
-        public Dictionary<string, int> m_Ints;
-        public Dictionary<string, float> m_Floats;
-        public Dictionary<string, Color> m_Colors;
+        [JsonConverter(typeof(KVPConverter<UnityTexEnv>))]
+        public List<KeyValuePair<string, UnityTexEnv>> m_TexEnvs;
+        [JsonConverter(typeof(KVPConverter<int>))]
+        public List<KeyValuePair<string, int>> m_Ints;
+        [JsonConverter(typeof(KVPConverter<float>))]
+        public List<KeyValuePair<string, float>> m_Floats;
+        [JsonConverter(typeof(KVPConverter<Color>))]
+        public List<KeyValuePair<string, Color>> m_Colors;
 
         public UnityPropertySheet(ObjectReader reader)
         {
             var version = reader.version;
 
             int m_TexEnvsSize = reader.ReadInt32();
-            m_TexEnvs = new Dictionary<string, UnityTexEnv>(m_TexEnvsSize);
+            m_TexEnvs = new List<KeyValuePair<string, UnityTexEnv>>();
             for (int i = 0; i < m_TexEnvsSize; i++)
             {
-                m_TexEnvs.Add(reader.ReadAlignedString(), new UnityTexEnv(reader));
+                m_TexEnvs.Add(new(reader.ReadAlignedString(), new UnityTexEnv(reader)));
             }
 
             if (version[0] >= 2021) //2021.1 and up
             {
                 int m_IntsSize = reader.ReadInt32();
-                m_Ints = new Dictionary<string, int>(m_IntsSize);
+                m_Ints = new List<KeyValuePair<string, int>>();
                 for (int i = 0; i < m_IntsSize; i++)
                 {
-                    m_Ints.Add(reader.ReadAlignedString(), reader.ReadInt32());
+                    m_Ints.Add(new(reader.ReadAlignedString(), reader.ReadInt32()));
                 }
             }
 
             int m_FloatsSize = reader.ReadInt32();
-            m_Floats = new Dictionary<string, float>(m_FloatsSize);
+            m_Floats = new List<KeyValuePair<string, float>>();
             for (int i = 0; i < m_FloatsSize; i++)
             {
-                m_Floats.Add(reader.ReadAlignedString(), reader.ReadSingle());
+                m_Floats.Add(new(reader.ReadAlignedString(), reader.ReadSingle()));
             }
 
             int m_ColorsSize = reader.ReadInt32();
-            m_Colors = new Dictionary<string, Color>(m_ColorsSize);
+            m_Colors = new List<KeyValuePair<string, Color>>();
             for (int i = 0; i < m_ColorsSize; i++)
             {
-                m_Colors.Add(reader.ReadAlignedString(), reader.ReadColor4());
+                m_Colors.Add(new(reader.ReadAlignedString(), reader.ReadColor4()));
             }
         }
     }
@@ -99,6 +108,11 @@ namespace AssetStudio
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
             {
                 var m_CustomRenderQueue = reader.ReadInt32();
+            }
+
+            if (reader.Game.Type.IsLoveAndDeepspace())
+            {
+                var m_MaterialType = reader.ReadUInt32();
             }
 
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 1)) //5.1 and up

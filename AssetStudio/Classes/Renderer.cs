@@ -19,12 +19,12 @@ namespace AssetStudio
 
     public abstract class Renderer : Component
     {
-        public static bool Parsable;
-
-        public PPtr<Material>[] m_Materials;
+        public List<PPtr<Material>> m_Materials;
         public StaticBatchInfo m_StaticBatchInfo;
         public uint[] m_SubsetIndices;
         private bool isNewHeader = false;
+
+        public static bool HasPrope(SerializedType type) => type.Match("F622BC5EE0E86D7BDF8C912DD94DCBF5") || type.Match("9255FA54269ADD294011FDA525B5FCAC");
 
         protected Renderer(ObjectReader reader) : base(reader)
         {
@@ -98,6 +98,12 @@ namespace AssetStudio
                     if (version[0] >= 2021) //2021.1 and up
                     {
                         var m_StaticShadowCaster = reader.ReadByte();
+                        if (reader.Game.Type.IsArknightsEndfield())
+                        {
+                            var m_RealtimeShadowCaster = reader.ReadByte();
+                            var m_SubMeshRenderMode = reader.ReadByte();
+                            var m_CharacterIndex = reader.ReadByte();
+                        }
                     }
                     var m_MotionVectors = reader.ReadByte();
                     var m_LightProbeUsage = reader.ReadByte();
@@ -159,10 +165,10 @@ namespace AssetStudio
                 var m_ShaderLODDistanceRatio = reader.ReadSingle();
             }
             var m_MaterialsSize = reader.ReadInt32();
-            m_Materials = new PPtr<Material>[m_MaterialsSize];
+            m_Materials = new List<PPtr<Material>>();
             for (int i = 0; i < m_MaterialsSize; i++)
             {
-                m_Materials[i] = new PPtr<Material>(reader);
+                m_Materials.Add(new PPtr<Material>(reader));
             }
 
             if (version[0] < 3) //3.0 down
@@ -188,6 +194,8 @@ namespace AssetStudio
                 var m_MatLayers = reader.ReadInt32();
             }
 
+            if (!reader.Game.Type.IsSR() || !HasPrope(reader.serializedType))
+            {
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 4)) //5.4 and up
             {
                 var m_ProbeAnchor = new PPtr<Transform>(reader);
@@ -204,6 +212,7 @@ namespace AssetStudio
                 }
 
                 var m_LightProbeAnchor = new PPtr<Transform>(reader); //5.0 and up m_ProbeAnchor
+            }
             }
 
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
