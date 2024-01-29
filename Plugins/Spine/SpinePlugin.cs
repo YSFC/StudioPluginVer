@@ -86,7 +86,7 @@ namespace Plugins.Ahykal
                                 }
                                 if (atalsTarget.TryGetComponents("materials", out List<Material> materials))
                                 {
-                                    var textures = materials.ApplyFunc(material => material.m_SavedProperties.m_TexEnvs["_MainTex"].m_Texture.TryGet(out Texture2D texture2D) ? texture2D : null, true);
+                                    var textures = materials.ApplyFunc(material => material.m_SavedProperties.m_TexEnvs[0].Value.m_Texture.TryGet(out Texture2D texture2D) ? texture2D : null, true);
                                     textures.SaveTextures(subfolder);
                                     //SaveTextures(textures, subfolder);
                                 }
@@ -188,7 +188,8 @@ namespace Plugins.Ahykal
                                 {
                                     JArray texNames = new JArray();
                                     JArray textures = new JArray();
-                                    var texture2Ds = materials.ApplyFunc(material => material.m_SavedProperties.m_TexEnvs["_MainTex"].m_Texture.TryGet(out Texture2D texture2D) ? texture2D : null, true);
+                                    
+                                    var texture2Ds = materials.ApplyFunc(material => material.m_SavedProperties.m_TexEnvs[0].Value.m_Texture.TryGet(out Texture2D texture2D) ? texture2D : null, true);
                                     foreach (var texture2D in texture2Ds)
                                     {
                                         texture2D.SaveTexture(subfolder);

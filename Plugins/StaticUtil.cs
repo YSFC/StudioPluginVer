@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace Plugins
         public static void SaveTexture(this Texture2D texture2D, string folder)
         {
             var texture2dConverter = new Texture2DConverter(texture2D);
-            var buff = BigArrayPool<byte>.Shared.Rent(texture2D.m_Width * texture2D.m_Height * 4);
+            var buff = ArrayPool<byte>.Shared.Rent(texture2D.m_Width * texture2D.m_Height * 4);
             try
             {
                 if (texture2dConverter.DecodeTexture2D(buff))
@@ -42,7 +43,7 @@ namespace Plugins
             }
             finally
             {
-                BigArrayPool<byte>.Shared.Return(buff);
+                ArrayPool<byte>.Shared.Return(buff);
             }
         }
     }

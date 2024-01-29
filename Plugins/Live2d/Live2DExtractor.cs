@@ -7,6 +7,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
@@ -261,7 +262,7 @@ namespace UnityLive2DExtractor
                 foreach (var texture2D in texture2Ds)
                 {
                     var texture2dConverter = new Texture2DConverter(texture2D);
-                    var buff = BigArrayPool<byte>.Shared.Rent(texture2D.m_Width * texture2D.m_Height * 4);
+                    var buff = ArrayPool<byte>.Shared.Rent(texture2D.m_Width * texture2D.m_Height * 4);
                     try
                     {
                         if (texture2dConverter.DecodeTexture2D(buff))
@@ -278,7 +279,7 @@ namespace UnityLive2DExtractor
                     }
                     finally
                     {
-                        BigArrayPool<byte>.Shared.Return(buff);
+                        ArrayPool<byte>.Shared.Return(buff);
                     }
                 }
                 //motion

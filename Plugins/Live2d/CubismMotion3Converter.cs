@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using AssetStudio;
 using SixLabors.Fonts.Unicode;
+using ZstdSharp.Unsafe;
 
 namespace UnityLive2DExtractor
 {
@@ -47,7 +48,7 @@ namespace UnityLive2DExtractor
                 for (int frameIndex = 1; frameIndex < streamedFrames.Count - 1; frameIndex++)
                 {
                     var frame = streamedFrames[frameIndex];
-                    for (int curveIndex = 0; curveIndex < frame.keyList.Length; curveIndex++)
+                    for (int curveIndex = 0; curveIndex < frame.keyList.Count; curveIndex++)
                     {
                         ReadStreamedData(iAnim, m_ClipBindingConstant, frame.time, frame.keyList[curveIndex]);
                     }
@@ -98,7 +99,7 @@ namespace UnityLive2DExtractor
             GetLive2dPath(binding, out var target, out var boneName);
             if (string.IsNullOrEmpty(boneName))
             {
-                Console.WriteLine($"{iAnim.Name} read fail on binding {Array.IndexOf(m_ClipBindingConstant.genericBindings, binding)}");
+                Console.WriteLine($"{iAnim.Name} read fail on binding {Array.IndexOf(m_ClipBindingConstant.genericBindings.ToArray(), binding)}");
                 return;
             }
 
@@ -113,7 +114,7 @@ namespace UnityLive2DExtractor
             GetLive2dPath(binding, out var target, out var boneName);
             if (string.IsNullOrEmpty(boneName))
             {
-                Console.WriteLine($"{iAnim.Name} read fail on binding {Array.IndexOf(m_ClipBindingConstant.genericBindings, binding)}");
+                Console.WriteLine($"{iAnim.Name} read fail on binding {Array.IndexOf(m_ClipBindingConstant.genericBindings.ToArray(), binding)}");
                 return;
             }
 
