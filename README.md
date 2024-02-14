@@ -1,3 +1,50 @@
+# PluginsVer
+在[`RazTools/Studio`](https://github.com/RazTools/Studio)基础上增加Plugins扩展，可以在Plugin菜单中使用这些指令。
+
+* ## Live2D
+	1. ExtractFromFolder：[`UnityCNLive2DExtractor`](https://github.com/Razmoth/UnityCNLive2DExtractor)的Gui版本，用于可用`Container`完成分组的常规L2D资源。
+	* ### 使用：
+		1. `Options`中选择可用的正确解包方式。
+		2. `ExtractFromFolder`菜单选中解包资源所在文件夹。
+		3. 选择要导出到的文件夹位置。
+
+		**注意`MonoBehaviour`资源可能的dll程序集载入需求，一些情况下需要使用[`Il2CppDumper`](https://github.com/Perfare/Il2CppDumper)或其他工具dump出用于解包的DummyDll。**
+
+	2. 每组L2D资源(除`Motion`以外)对应唯一的`GameObject`，通过涵盖这些资源信息的`GameObject`可以反向映射获取一组L2D资源(`Studio`默认状态不会显示`GameObject`，这里通过`Animator`间接获取对应的`GameObject`)。
+
+	* ### 使用前的配置：
+		`ExportWithPathIDFolder`：导出时额外增加一级以`PathID`命名的目录(排除预期之外的覆盖行为)。
+
+	* ### 使用：
+		* `SaveByAllAnimators`：从所有`Animator`中导出可用的L2D资源组。
+		* `SaveBySelectedAnimators`：从选中的所有`Animator`中导出可用的L2D资源组。
+
+		**注意`MonoBehaviour`资源可能的dll程序集载入需求，一些情况下需要使用[`Il2CppDumper`](https://github.com/Perfare/Il2CppDumper)或其他工具dump出用于解包的DummyDll。**
+
+	* ### 缺陷：
+		**由于`Gameobject`与`Motions`资源并无直接关联，使用此方案需要配合`SaveMotionsBySelected`。**
+
+	* ### 其它:
+		* `SaveMotionsBySelected`：从选中的所有`Animator`以及`AnimationClip`中导出可能的`.motion3.json`文件。
+		* `ForceSaveAsMoc3`：从选中的所有`MonoBehaviour`中导出可用的`.moc3`文件。
+		* `ForceSaveAsPhysics`：从选中的所有`MonoBehaviour`中导出可用的`.physics3.json`文件。
+
+* ## Spine
+	每组Spine资源对应唯一的`MonoBehaviour`，通过涵盖这些Spine资源信息的`MonoBehaviour`可以反向映射获取一组Spine资源。
+	
+	* ### 使用前的配置：
+		* `ExportExviewerConfig`：生成用于[`Live2DViewerEX`](https://store.steampowered.com/app/616720/Live2DViewerEX/)的配置文件。
+		* `ExportWithSkelFolder`：导出时额外增加一级以`Spine骨架文件名`命名的目录。
+		* `ExportWithPathIDFolder`：导出时额外增加一级以`PathID`命名的目录(排除预期之外的覆盖行为)。
+
+	* ### 使用：
+		* `SaveByAllMonoBehaviourScript`：从所有的`MonoBehaviour`中导出可用的Spine资源组。
+		* `SaveBySelectedMonoBehaviourScript`：从选中的`MonoBehaviour`中导出可用的Spine资源组。
+
+		**注意`MonoBehaviour`资源可能的dll程序集载入需求，一些情况下需要使用[`Il2CppDumper`](https://github.com/Perfare/Il2CppDumper)或其他工具dump出用于解包的DummyDll。**
+  
+******
+
 # Studio
 Check out the [original AssetStudio project](https://github.com/Perfare/AssetStudio) for more information.
 
