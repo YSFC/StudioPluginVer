@@ -89,13 +89,27 @@ namespace AssetStudio
         Int = 5
     };
 
+    [Flags]
+    public enum SerializedPropertyFlag
+    {
+        HideInInspector = 1 << 0,
+        PerRendererData = 1 << 1,
+        NoScaleOffset = 1 << 2,
+        Normal = 1 << 3,
+        HDR = 1 << 4,
+        Gamma = 1 << 5,
+        NonModifiableTextureData = 1 << 6,
+        MainTexture = 1 << 7,
+        MainColor = 1 << 8,
+    }
+
     public class SerializedProperty
     {
         public string m_Name;
         public string m_Description;
         public string[] m_Attributes;
         public SerializedPropertyType m_Type;
-        public uint m_Flags;
+        public SerializedPropertyFlag m_Flags;
         public float[] m_DefValue;
         public SerializedTextureProperty m_DefTexture;
 
@@ -105,7 +119,7 @@ namespace AssetStudio
             m_Description = reader.ReadAlignedString();
             m_Attributes = reader.ReadStringArray();
             m_Type = (SerializedPropertyType)reader.ReadInt32();
-            m_Flags = reader.ReadUInt32();
+            m_Flags = (SerializedPropertyFlag)reader.ReadUInt32();
             m_DefValue = reader.ReadSingleArray(4);
             m_DefTexture = new SerializedTextureProperty(reader);
         }
@@ -587,8 +601,9 @@ namespace AssetStudio
         public List<UAVParameter> m_UAVParams;
         public List<SamplerParameter> m_Samplers;
 
-        public static bool HasGlobalLocalKeywordIndices(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A", "450A058C218DAF000647948F2F59DA6D");
-        public static bool HasInstancedStructuredBuffers(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A");
+        public static bool HasGlobalLocalKeywordIndices(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A", "450A058C218DAF000647948F2F59DA6D", "B239746E4EC6E4D6D7BA27C84178610A", "3FD560648A91A99210D5DDF2BE320536");
+        public static bool HasInstancedStructuredBuffers(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A", "B239746E4EC6E4D6D7BA27C84178610A", "3FD560648A91A99210D5DDF2BE320536");
+        public static bool HasIsAdditionalBlob(SerializedType type) => type.Match("B239746E4EC6E4D6D7BA27C84178610A");
 
         public SerializedSubProgram(ObjectReader reader)
         {
@@ -600,6 +615,11 @@ namespace AssetStudio
             }
 
             m_BlobIndex = reader.ReadUInt32();
+            if (HasIsAdditionalBlob(reader.serializedType))
+            {
+                var m_IsAdditionalBlob = reader.ReadBoolean();
+                reader.AlignStream();
+            }
             m_Channels = new ParserBindChannels(reader);
 
             if ((version[0] >= 2019 && version[0] < 2021) || (version[0] == 2021 && version[1] < 2) || HasGlobalLocalKeywordIndices(reader.serializedType)) //2019 ~2021.1

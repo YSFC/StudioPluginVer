@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using AssetStudio.CLI.Properties;
 using Newtonsoft.Json;
 using static AssetStudio.CLI.Studio;
@@ -40,25 +39,57 @@ namespace AssetStudio.CLI
                 }
 
                 Studio.Game = game;
-                Logger.Default = new ConsoleLogger() { Flags = o.LoggerFlags.Aggregate((e, x) => e |= x) };
+                Logger.Default = new ConsoleLogger();
+                Logger.Flags = o.LoggerFlags.Aggregate((e, x) => e |= x);
                 Logger.FileLogging = Settings.Default.enableFileLogging;
                 AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
                 AssetsHelper.SetUnityVersion(o.UnityVersion);
 
-                if (o.TypeFilter == null)
+                TypeFlags.SetTypes(JsonConvert.DeserializeObject<Dictionary<ClassIDType, (bool, bool)>>(Settings.Default.types));
+
+                var classTypeFilter = Array.Empty<ClassIDType>();
+                if (!o.TypeFilter.IsNullOrEmpty())
                 {
-                    TypeFlags.SetTypes(JsonConvert.DeserializeObject<Dictionary<ClassIDType, (bool, bool)>>(Settings.Default.types));
-                }
-                else
-                {
-                    foreach (var type in o.TypeFilter)
+                    var classTypeFilterList = new List<ClassIDType>();
+                    for (int i = 0; i < o.TypeFilter.Length; i++)
                     {
-                        TypeFlags.SetType(type, true, true);
+                        var typeStr = o.TypeFilter[i];
+                        var type = ClassIDType.UnknownType;
+                        var flag = TypeFlag.Both;
+                    
+                        try
+                        {
+                            if (typeStr.Contains(':'))
+                            {
+                                var param = typeStr.Split(':');
+                    
+                                flag = (TypeFlag)Enum.Parse(typeof(TypeFlag), param[1]);
+                    
+                                typeStr = param[0];
+                            }
+                    
+                            type = (ClassIDType)Enum.Parse(typeof(ClassIDType), typeStr);
+                    
+                            TypeFlags.SetType(type, flag.HasFlag(TypeFlag.Parse), flag.HasFlag(TypeFlag.Export));
+                    
+                            classTypeFilterList.Add(type);
+                        }
+                        catch(Exception e)
+                        {
+                            Logger.Error($"{typeStr} has invalid format, skipping...");
+                            continue;
+                        }
                     }
+
+                    classTypeFilter = classTypeFilterList.ToArray();
 
                     if (ClassIDType.GameObject.CanExport() || ClassIDType.Animator.CanExport())
                     {
                         TypeFlags.SetType(ClassIDType.Texture2D, true, false);
+                        if (Settings.Default.exportMaterials)
+                        {
+                            TypeFlags.SetType(ClassIDType.Material, true, false);
+                        }
                         if (ClassIDType.GameObject.CanExport())
                         {
                             TypeFlags.SetType(ClassIDType.Animator, true, false);
@@ -68,6 +99,11 @@ namespace AssetStudio.CLI
                             TypeFlags.SetType(ClassIDType.GameObject, true, false);
                         }
                     }
+                }
+
+                if (o.GroupAssetsType == AssetGroupOption.ByContainer)
+                {
+                    TypeFlags.SetType(ClassIDType.AssetBundle, true, false);
                 }
 
                 assetsManager.Silent = o.Silent;
@@ -97,28 +133,34 @@ namespace AssetStudio.CLI
 
                 if (o.MapOp.HasFlag(MapOpType.CABMap))
                 {
-                    AssetsHelper.BuildCABMap(files, o.MapName, o.Input.FullName, game);
-                }
-                if (o.MapOp.HasFlag(MapOpType.Load))
-                {
-                    AssetsHelper.LoadCABMapInternal(o.MapName);
-                    assetsManager.ResolveDependencies = true;
+                    if (o.MapOp.HasFlag(MapOpType.Load))
+                    {
+                        AssetsHelper.BuildCABMap(files, o.MapName, o.Input.FullName, game);
+                    }
+                    else
+                    {
+                        AssetsHelper.LoadCABMapInternal(o.MapName);
+                        assetsManager.ResolveDependencies = true;
+                    }
                 }
                 if (o.MapOp.HasFlag(MapOpType.AssetMap))
                 {
-                    if (files.Length == 1)
+                    if (o.MapOp.HasFlag(MapOpType.Load))
                     {
-                        throw new Exception("Unable to build AssetMap with input_path as a file !!");
+                        files = AssetsHelper.ParseAssetMap(o.MapName, o.MapType, classTypeFilter, o.NameFilter, o.ContainerFilter);
                     }
-                    var resetEvent = new ManualResetEvent(false);
-                    AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
-                    resetEvent.WaitOne();
+                    else
+                    {
+                        if (files.Length == 1)
+                        {
+                            throw new Exception("Unable to build AssetMap with input_path as a file !!");
+                        }
+                        AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, classTypeFilter, o.NameFilter, o.ContainerFilter);
+                    }
                 }
                 if (o.MapOp.HasFlag(MapOpType.Both))
                 {
-                    var resetEvent = new ManualResetEvent(false);
-                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
-                    resetEvent.WaitOne();
+                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, classTypeFilter, o.NameFilter, o.ContainerFilter);
                 }
                 if (o.MapOp.Equals(MapOpType.None) || o.MapOp.HasFlag(MapOpType.Load))
                 {
@@ -134,7 +176,7 @@ namespace AssetStudio.CLI
                         assetsManager.LoadFiles(file);
                         if (assetsManager.assetsFileList.Count > 0)
                         {
-                            BuildAssetData(o.TypeFilter, o.NameFilter, o.ContainerFilter, ref i);
+                            BuildAssetData(classTypeFilter, o.NameFilter, o.ContainerFilter, ref i);
                             ExportAssets(o.Output.FullName, exportableAssets, o.GroupAssetsType, o.AssetExportType);
                         }
                         exportableAssets.Clear();

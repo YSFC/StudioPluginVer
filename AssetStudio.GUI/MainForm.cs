@@ -18,7 +18,6 @@ using System.Windows.Forms;
 using static AssetStudio.GUI.Studio;
 using OpenTK.Graphics;
 using OpenTK.Mathematics;
-using Newtonsoft.Json.Converters;
 using System.Text.RegularExpressions;
 using OpenTK.Audio.OpenAL;
 
@@ -141,7 +140,7 @@ namespace AssetStudio.GUI
                 var menuItem = new ToolStripMenuItem(loggerEvent.ToString()) { CheckOnClick = true, Checked = loggerEventType.HasFlag(loggerEvent), Tag = (int)loggerEvent };
                 loggedEventsMenuItem.DropDownItems.Add(menuItem);
             }
-            Logger.Default.Flags = loggerEventType;
+            Logger.Flags = loggerEventType;
             Logger.FileLogging = enableFileLogging.Checked;
         }
 
@@ -191,7 +190,7 @@ namespace AssetStudio.GUI
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                e.Effect = DragDropEffects.Move;
+                e.Effect = DragDropEffects.Copy;
             }
         }
 
@@ -875,12 +874,6 @@ namespace AssetStudio.GUI
                         break;
                     default:
                         var str = assetItem.Asset.Dump();
-                        if (Properties.Settings.Default.displayAll || string.IsNullOrEmpty(str))
-                        {
-                            var settings = new JsonSerializerSettings();
-                            settings.Converters.Add(new StringEnumConverter());
-                            str = JsonConvert.SerializeObject(assetItem.Asset, Formatting.Indented, settings);
-                        }
                         if (str != null)
                         {
                             textPreviewBox.Text = str;
@@ -891,7 +884,7 @@ namespace AssetStudio.GUI
             }
             catch (Exception e)
             {
-                MessageBox.Show($"Preview {assetItem.Type}:{assetItem.Text} error\r\n{e.Message}\r\n{e.StackTrace}");
+                Logger.Error($"Preview {assetItem.Type}:{assetItem.Text} error\r\n{e.Message}\r\n{e.StackTrace}");
             }
         }
 
@@ -1317,6 +1310,8 @@ namespace AssetStudio.GUI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
+                exportMaterials = false,
+                materials = new HashSet<Material>(),
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
                 texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
@@ -1330,6 +1325,8 @@ namespace AssetStudio.GUI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
+                exportMaterials = false,
+                materials = new HashSet<Material>(),
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
                 texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
@@ -1483,7 +1480,7 @@ namespace AssetStudio.GUI
             }
         }
 
-        private void ResetForm()
+        public void ResetForm()
         {
             Text = $"Studio v{Application.ProductVersion}";
             assetsManager.Clear();
@@ -1699,6 +1696,11 @@ namespace AssetStudio.GUI
                     saveDirectoryBackup = saveFolderDialog.Folder;
                     var exportPath = Path.Combine(saveFolderDialog.Folder, "GameObject") + Path.DirectorySeparatorChar;
                     var roots = sceneTreeView.Nodes.Cast<TreeNode>().Where(x => x.Level == 0 && x.Checked).ToList();
+                    if (roots.Count == 0)
+                    {
+                        Logger.Info("No root nodes found selected.");
+                        return;
+                    }
                     List<AssetItem> animationList = null;
                     if (animation)
                     {
@@ -1886,7 +1888,7 @@ namespace AssetStudio.GUI
             assetListView.EndUpdate();
         }
 
-        private void ExportAssets(ExportFilter type, ExportType exportType)
+        private async void ExportAssets(ExportFilter type, ExportType exportType)
         {
             if (exportableAssets.Count > 0)
             {
@@ -1909,7 +1911,7 @@ namespace AssetStudio.GUI
                             toExportAssets = visibleAssets;
                             break;
                     }
-                    Studio.ExportAssets(saveFolderDialog.Folder, toExportAssets, exportType);
+                    await Studio.ExportAssets(saveFolderDialog.Folder, toExportAssets, exportType, Properties.Settings.Default.openAfterExport);
                 }
             }
             else
@@ -2359,7 +2361,7 @@ namespace AssetStudio.GUI
             Properties.Settings.Default.loggerEventType = loggedEventsMenuItem.DropDownItems.Cast<ToolStripMenuItem>().Select(x => x.Checked ? (int)x.Tag : 0).Sum();
             Properties.Settings.Default.Save();
 
-            Logger.Default.Flags = (LoggerEvent)Properties.Settings.Default.loggerEventType;
+            Logger.Flags = (LoggerEvent)Properties.Settings.Default.loggerEventType;
         }
 
         private void abortStripMenuItem_Click(object sender, EventArgs e)
@@ -2475,7 +2477,7 @@ namespace AssetStudio.GUI
             ERRCHECK(result);
             if (version < FMOD.VERSION.number)
             {
-                MessageBox.Show($"Error!  You are using an old version of FMOD {version:X}.  This program requires {FMOD.VERSION.number:X}.");
+                Logger.Error($"Error!  You are using an old version of FMOD {version:X}.  This program requires {FMOD.VERSION.number:X}.");
                 Application.Exit();
             }
 

@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Text;
 using MessagePack;
+using System.Threading.Tasks;
 
 namespace AssetStudio
 {
@@ -312,7 +313,7 @@ namespace AssetStudio
             }
         } 
 
-        public static void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        public static async void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
             Logger.Info("Building AssetMap...");
             try
@@ -327,7 +328,7 @@ namespace AssetStudio
 
                 UpdateContainers(assets, game);
 
-                ExportAssetsMap(assets, game, mapName, savePath, exportListType, resetEvent);
+                await ExportAssetsMap(assets, game, mapName, savePath, exportListType);
             }
             catch(Exception e)
             {
@@ -504,6 +505,96 @@ namespace AssetStudio
             }
         }
 
+        public static string[] ParseAssetMap(string mapName, ExportListType mapType, ClassIDType[] typeFilter, Regex[] nameFilter, Regex[] containerFilter)
+        {
+            var matches = new HashSet<string>();
+
+            switch (mapType)
+            {
+                case ExportListType.MessagePack:
+                    {
+                        using var stream = File.OpenRead(mapName);
+                        var assetMap = MessagePackSerializer.Deserialize<AssetMap>(stream, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));
+                        foreach(var entry in assetMap.AssetEntries)
+                        {
+                            var isNameMatch = nameFilter.Length == 0 || nameFilter.Any(x => x.IsMatch(entry.Name));
+                            var isContainerMatch = containerFilter.Length == 0 || containerFilter.Any(x => x.IsMatch(entry.Container));
+                            var isTypeMatch = typeFilter.Length == 0 || typeFilter.Any(x => x == entry.Type);
+                            if (isNameMatch && isContainerMatch && isTypeMatch)
+                            {
+                                matches.Add(entry.Source);
+                            }
+                        }
+                    }
+
+                    break;
+                case ExportListType.XML:
+                    {
+                        using var stream = File.OpenRead(mapName);
+                        using var reader = XmlReader.Create(stream);
+                        reader.ReadToFollowing("Assets");
+                        reader.ReadToFollowing("Asset");
+                        do
+                        {
+                            reader.ReadToFollowing("Name");
+                            var name = reader.ReadInnerXml();
+
+                            var isNameMatch = nameFilter.Length == 0 || nameFilter.Any(x => x.IsMatch(name));
+
+                            reader.ReadToFollowing("Container");
+                            var container = reader.ReadInnerXml();
+
+                            var isContainerMatch = containerFilter.Length == 0 || containerFilter.Any(x => x.IsMatch(container));
+
+                            reader.ReadToFollowing("Type");
+                            var type = reader.ReadInnerXml();
+
+                            var isTypeMatch = typeFilter.Length == 0 || typeFilter.Any(x => x.ToString().Equals(type, StringComparison.OrdinalIgnoreCase));
+
+                            reader.ReadToFollowing("PathID");
+                            var pathID = reader.ReadInnerXml();
+
+                            reader.ReadToFollowing("Source");
+                            var source = reader.ReadInnerXml();
+
+                            if (isNameMatch && isContainerMatch && isTypeMatch)
+                            {
+                                matches.Add(source);
+                            }
+
+                            reader.ReadEndElement();
+                        } while (reader.ReadToNextSibling("Asset"));
+                    }
+
+                    break;
+                case ExportListType.JSON:
+                    {
+                        using var stream = File.OpenRead(mapName);
+                        using var file = new StreamReader(stream);
+                        using var reader = new JsonTextReader(file);
+
+                        var serializer = new JsonSerializer() { Formatting = Newtonsoft.Json.Formatting.Indented };
+                        serializer.Converters.Add(new StringEnumConverter());
+
+                        var entries = serializer.Deserialize<List<AssetEntry>>(reader);
+                        foreach (var entry in entries)
+                        {
+                            var isNameMatch = nameFilter.Length == 0 || nameFilter.Any(x => x.IsMatch(entry.Name));
+                            var isContainerMatch = containerFilter.Length == 0 || containerFilter.Any(x => x.IsMatch(entry.Container));
+                            var isTypeMatch = typeFilter.Length == 0 || typeFilter.Any(x => x == entry.Type);
+                            if (isNameMatch && isContainerMatch && isTypeMatch)
+                            {
+                                matches.Add(entry.Source);
+                            }
+                        }
+                    }
+
+                    break;
+            }
+
+            return matches.ToArray();
+        }
+
         private static void UpdateContainers(List<AssetEntry> assets, Game game)
         {
             if (game.Type.IsGISubGroup() && assets.Count > 0)
@@ -533,9 +624,9 @@ namespace AssetStudio
             }
         }
 
-        private static void ExportAssetsMap(List<AssetEntry> toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
+        private static Task ExportAssetsMap(List<AssetEntry> toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
 
@@ -599,7 +690,7 @@ namespace AssetStudio
                 resetEvent?.Set();
             });
         }
-        public static void BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        public static async void BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
             Logger.Info($"Building Both...");
             CABMap.Clear();
@@ -618,7 +709,7 @@ namespace AssetStudio
             DumpCABMap(mapName);
 
             Logger.Info($"Map build successfully !! {collision} collisions found");
-            ExportAssetsMap(assets, game, mapName, savePath, exportListType, resetEvent);
+            await ExportAssetsMap(assets, game, mapName, savePath, exportListType);
         }
     }
 }

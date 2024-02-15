@@ -1,11 +1,15 @@
-﻿using SpirV;
+﻿using AssetStudio.PInvoke;
+using SharpGen.Runtime;
+using SpirV;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Vortice.D3DCompiler;
 
 namespace AssetStudio
 {
@@ -686,7 +690,10 @@ namespace AssetStudio
             {
                 sb.Append($"[{m_Attribute}] ");
             }
-            //TODO Flag
+            foreach (var flag in Enum.GetValues<SerializedPropertyFlag>().Where(x => m_Prop.m_Flags.HasFlag(x)))
+            {
+                sb.Append($"[{flag}] ");
+            }
             sb.Append($"{m_Prop.m_Name} (\"{m_Prop.m_Description}\", ");
             switch (m_Prop.m_Type)
             {
@@ -1031,6 +1038,7 @@ namespace AssetStudio
                     case ShaderGpuProgramType.GLCore32:
                     case ShaderGpuProgramType.GLCore41:
                     case ShaderGpuProgramType.GLCore43:
+                        sb.Append($"// hash: {ComputeHash64(m_ProgramCode):x8}\n");
                         sb.Append(Encoding.UTF8.GetString(m_ProgramCode));
                         break;
                     case ShaderGpuProgramType.DX9VertexSM20:
@@ -1038,9 +1046,19 @@ namespace AssetStudio
                     case ShaderGpuProgramType.DX9PixelSM20:
                     case ShaderGpuProgramType.DX9PixelSM30:
                         {
-                            /*var shaderBytecode = new ShaderBytecode(m_ProgramCode);
-                            sb.Append(shaderBytecode.Disassemble());*/
-                            sb.Append("// shader disassembly not supported on DXBC");
+                            try
+                            {
+                                var programCodeSpan = m_ProgramCode.AsSpan();
+                                var g = Compiler.Disassemble(programCodeSpan.GetPinnableReference(), programCodeSpan.Length, DisasmFlags.None, "");
+
+                                sb.Append($"// hash: {ComputeHash64(programCodeSpan):x8}\n");
+                                sb.Append(g.AsString());
+                            }
+                            catch (Exception e)
+                            {
+                                sb.Append($"// disassembly error {e.Message}\n");
+                            }
+
                             break;
                         }
                     case ShaderGpuProgramType.DX10Level9Vertex:
@@ -1054,20 +1072,48 @@ namespace AssetStudio
                     case ShaderGpuProgramType.DX11HullSM50:
                     case ShaderGpuProgramType.DX11DomainSM50:
                         {
-                            /*int start = 6;
-                            if (m_Version == 201509030) // 5.3
+                            int type = m_ProgramCode[0];
+                            int start = 1;
+                            if (type > 0)
                             {
-                                start = 5;
+                                if (type == 1)
+                                {
+                                    start = 6;
+                                }
+                                else if (type == 2)
+                                {
+                                    start = 38;
+                                }
                             }
-                            var buff = new byte[m_ProgramCode.Length - start];
-                            Buffer.BlockCopy(m_ProgramCode, start, buff, 0, buff.Length);
-                            var shaderBytecode = new ShaderBytecode(buff);
-                            sb.Append(shaderBytecode.Disassemble());*/
-                            sb.Append("// shader disassembly not supported on DXBC");
+
+                            var buffSpan = m_ProgramCode.AsSpan(start);
+
+                            sb.Append($"// hash: {ComputeHash64(buffSpan):x8}\n");
+                            try
+                            {
+                                HLSLDecompiler.DecompileShader(buffSpan.ToArray(), buffSpan.Length, out var hlslText);
+                                sb.Append(hlslText);
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.Verbose($"Decompile error {e.Message}");
+                                Logger.Verbose($"Attempting to disassemble...");
+
+                                try
+                                {
+                                    var g = Compiler.Disassemble(buffSpan.GetPinnableReference(), buffSpan.Length, DisasmFlags.None, "");
+                                    sb.Append(g.AsString());
+                                }
+                                catch (Exception ex)
+                                {
+                                    sb.Append($"// decompile/disassembly error {ex.Message}\n");
+                                }
+                            }
                             break;
                         }
                     case ShaderGpuProgramType.MetalVS:
                     case ShaderGpuProgramType.MetalFS:
+                        sb.Append($"// hash: {ComputeHash64(m_ProgramCode):x8}\n");
                         using (var reader = new EndianBinaryReader(new MemoryStream(m_ProgramCode), EndianType.LittleEndian))
                         {
                             var fourCC = reader.ReadUInt32();
@@ -1084,6 +1130,7 @@ namespace AssetStudio
                     case ShaderGpuProgramType.SPIRV:
                         try
                         {
+                            sb.Append($"// hash: {ComputeHash64(m_ProgramCode):x8}\n");
                             sb.Append(SpirVShaderConverter.Convert(m_ProgramCode));
                         }
                         catch (Exception e)
@@ -1096,9 +1143,11 @@ namespace AssetStudio
                     case ShaderGpuProgramType.ConsoleHS:
                     case ShaderGpuProgramType.ConsoleDS:
                     case ShaderGpuProgramType.ConsoleGS:
+                        sb.Append($"//hash: {ComputeHash64(m_ProgramCode):x8}\n");
                         sb.Append(Encoding.UTF8.GetString(m_ProgramCode));
                         break;
                     default:
+                        sb.Append($"//hash: {ComputeHash64(m_ProgramCode):x8}\n");
                         sb.Append($"//shader disassembly not supported on {m_ProgramType}");
                         break;
                 }
@@ -1106,5 +1155,42 @@ namespace AssetStudio
             sb.Append('"');
             return sb.ToString();
         }
+        public ulong ComputeHash64(Span<byte> data)
+        {
+            ulong hval = 0;
+            foreach (var b in data)
+            {
+                hval *= 0x100000001B3;
+                hval ^= b;
+            }
+            return hval;
+        }
+    }
+
+    public static class HLSLDecompiler
+    {
+        private const string DLL_NAME = "HLSLDecompiler";
+        static HLSLDecompiler()
+        {
+            DllLoader.PreloadDll(DLL_NAME);
+        }
+        public static void DecompileShader(byte[] shaderByteCode, int shaderByteCodeSize, out string hlslText)
+        {
+            var code = Decompile(shaderByteCode, shaderByteCodeSize, out var shaderText, out var shaderTextSize);
+            if (code != 0)
+            {
+                throw new Exception($"Unable to decompile shader, Error code: {code}");
+            }
+
+            hlslText = Marshal.PtrToStringAnsi(shaderText, shaderTextSize);
+            Marshal.FreeHGlobal(shaderText);
+        }
+
+        #region importfunctions
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int Decompile(byte[] shaderByteCode, int shaderByteCodeSize, out IntPtr shaderText, out int shaderTextSize);
+
+        #endregion
     }
 }
