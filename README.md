@@ -6,7 +6,7 @@
 		* ### 使用：
 			1. `Options`中选择可用的正确解包方式。
 			2. `ExtractFromFolder`菜单选中解包资源所在文件夹。
-			3. 选择要导出到的文件夹位置。
+			3. 将在文件夹所在目录生成`Live2DOutput`目录。
 	
 			**注意`MonoBehaviour`资源可能的dll程序集载入需求，一些情况下需要使用[`Il2CppDumper`](https://github.com/Perfare/Il2CppDumper)或其他工具dump出用于解包的DummyDll。**
 
