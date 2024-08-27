@@ -1,4 +1,4 @@
-﻿
+﻿﻿
 using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL;
 using System;
@@ -91,12 +91,12 @@ namespace AssetStudio.GUI
             InitializeLogger();
             InitalizeOptions();
             FMODinit();
-            PluginConnection.SetMainForm(this);
-            PluginConnection.InitPlugin();
-            
-            
-            
-        }
+			PluginConnection.SetMainForm(this);
+			PluginConnection.InitPlugin();
+
+
+
+		}
 
         private void InitializeExportOptions()
         {
@@ -614,9 +614,12 @@ namespace AssetStudio.GUI
                         foreach (var node in treeSrcResults)
                         {
                             var tempNode = node;
-                            while (tempNode.Parent != null)
+                            if (e.Alt)
                             {
-                                tempNode = tempNode.Parent;
+                                while (tempNode.Parent != null)
+                                {
+                                    tempNode = tempNode.Parent;
+                                }
                             }
                             tempNode.EnsureVisible();
                             tempNode.Checked = e.Control;
@@ -630,10 +633,14 @@ namespace AssetStudio.GUI
                             nextGObject = 0;
                         }
                         var node = treeSrcResults[nextGObject];
-                        while (node.Parent != null)
+                        if (e.Alt)
                         {
-                            node = node.Parent;
+                            while (node.Parent != null)
+                            {
+                                node = node.Parent;
+                            }
                         }
+
                         node.EnsureVisible();
                         node.Checked = e.Control;
                         sceneTreeView.SelectedNode = treeSrcResults[nextGObject];

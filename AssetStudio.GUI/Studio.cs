@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
@@ -548,7 +548,7 @@ namespace AssetStudio.GUI
                         case AssetGroupOption.ByContainer: //container path
                             if (!string.IsNullOrEmpty(asset.Container))
                             {
-                                exportPath = Path.Combine(savePath, Path.GetDirectoryName(asset.Container));
+                                exportPath = Path.HasExtension(asset.Container) ? Path.Combine(savePath, Path.GetDirectoryName(asset.Container)) : Path.Combine(savePath, asset.Container);
                             }
                             else
                             {
@@ -565,17 +565,7 @@ namespace AssetStudio.GUI
                                 exportPath = Path.Combine(savePath, Path.GetFileName(asset.SourceFile.originalPath) + "_export", asset.SourceFile.fileName);
                             }
                             break;
-						case AssetGroupOption.ByContainerAndFilename: //container path and file
-							if (!string.IsNullOrEmpty(asset.Container))
-							{
-								exportPath = Path.Combine(savePath, Path.GetDirectoryName(asset.Container), Path.GetFileNameWithoutExtension(asset.Container));
-							}
-							else
-							{
-								exportPath = savePath;
-							}
-							break;
-						default:
+                        default:
                             exportPath = savePath;
                             break;
                     }

@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -313,7 +313,7 @@ namespace AssetStudio
             }
         } 
 
-        public static async void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        public static async Task BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
             Logger.Info("Building AssetMap...");
             try
@@ -339,6 +339,7 @@ namespace AssetStudio
 
         private static void BuildAssetMap(string file, List<AssetEntry> assets, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
+            var matches = new List<AssetEntry>();
             var containers = new List<(PPtr<Object>, string)>();
             var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
             var objectAssetItemDic = new Dictionary<Object, AssetEntry>();
@@ -403,11 +404,13 @@ namespace AssetStudio
                             case ClassIDType.Animator when ClassIDType.Animator.CanParse():
                                 var component = new PPtr<Object>(objectReader);
                                 animators.Add((component, asset));
+                                asset.Name = objectReader.type.ToString();
                                 exportable = ClassIDType.Animator.CanExport();
                                 break;
                             case ClassIDType.MiHoYoBinData when ClassIDType.MiHoYoBinData.CanParse():
                                 var MiHoYoBinData = new MiHoYoBinData(objectReader);
                                 obj = MiHoYoBinData;
+                                asset.Name = objectReader.type.ToString();
                                 exportable = ClassIDType.MiHoYoBinData.CanExport();
                                 break;
                             case ClassIDType.IndexObject when ClassIDType.IndexObject.CanParse():
@@ -455,25 +458,18 @@ namespace AssetStudio
                         objectAssetItemDic.Add(obj, asset);
                         assetsFile.AddObject(obj);
                     }
-                    var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(asset.Name) || asset.Type == ClassIDType.Animator);
-                    var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type) || asset.Type == ClassIDType.Animator;
-                    if (isMatchRegex && isFilteredType && exportable)
+                    if (exportable)
                     {
-                        assets.Add(asset);
+                        matches.Add(asset);
                     }
                 }
             }
             foreach ((var pptr, var asset) in animators)
             {
-                if (pptr.TryGet<GameObject>(out var gameObject) && (nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(gameObject.m_Name))) && (typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type)))
+                if (pptr.TryGet<GameObject>(out var gameObject))
                 {
                     asset.Name = gameObject.m_Name;
                 }
-                else
-                {
-                    assets.Remove(asset);
-                }
-
             }
             foreach ((var pptr, var name) in mihoyoBinDataNames)
             {
@@ -492,17 +488,17 @@ namespace AssetStudio
             {
                 if (pptr.TryGet(out var obj))
                 {
-                    var item = objectAssetItemDic[obj];
-                    if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
-                    {
-                        item.Container = container;
-                    }
-                    else
-                    {
-                        assets.Remove(item);
-                    }
+                    objectAssetItemDic[obj].Container = container;
                 }
             }
+
+            assets.AddRange(matches.Where(x =>
+            {
+                var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(y => y.IsMatch(x.Name));
+                var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(x.Type);
+                var isContainerMatch = containerFilters.IsNullOrEmpty() || containerFilters.Any(y => y.IsMatch(x.Container));
+                return isMatchRegex && isFilteredType && isContainerMatch;
+            }));
         }
 
         public static string[] ParseAssetMap(string mapName, ExportListType mapType, ClassIDType[] typeFilter, Regex[] nameFilter, Regex[] containerFilter)
@@ -624,7 +620,7 @@ namespace AssetStudio
             }
         }
 
-        private static Task ExportAssetsMap(List<AssetEntry> toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
+        private static Task ExportAssetsMap(List<AssetEntry> toExportAssets, Game game, string name, string savePath, ExportListType exportListType)
         {
             return Task.Run(() =>
             {
@@ -686,11 +682,9 @@ namespace AssetStudio
 
                     Logger.Info($"Finished buidling AssetMap with {toExportAssets.Count} assets.");
                 }
-
-                resetEvent?.Set();
             });
         }
-        public static async void BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        public static async Task BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
             Logger.Info($"Building Both...");
             CABMap.Clear();

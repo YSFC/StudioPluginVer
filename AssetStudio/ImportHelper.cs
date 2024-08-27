@@ -1,4 +1,4 @@
-﻿using Org.Brotli.Dec;
+﻿﻿using Org.Brotli.Dec;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -277,11 +277,6 @@ namespace AssetStudio
         public static FileReader DecryptEnsembleStar(FileReader reader)
         {
             Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Ensemble Star encryption");
-            if (Path.GetExtension(reader.FileName) != ".z")
-            {
-                Logger.Verbose($"Expected file extension .z, found {Path.GetExtension(reader.FileName)} instead, aborting...");
-                return reader;
-            }
             using (reader)
             {
                 var data = reader.ReadBytes((int)reader.Length);
