@@ -8,6 +8,7 @@
     <FileVersion>1.36.00</FileVersion>
     <Copyright>Copyright © Perfare 2018-2022; Copyright © hozuki 2020</Copyright>
     <DebugType>embedded</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>

@@ -305,7 +305,7 @@ namespace AssetStudio.GUI
             // 
             assetGroupOptions.DropDownStyle = ComboBoxStyle.DropDownList;
             assetGroupOptions.FormattingEnabled = true;
-            assetGroupOptions.Items.AddRange(new object[] { "type name", "container path", "source file name", "do not group" });
+            assetGroupOptions.Items.AddRange(new object[] { "type name", "container path", "source file name", "do not group", "container and filename" });
             assetGroupOptions.Location = new System.Drawing.Point(7, 240);
             assetGroupOptions.Margin = new Padding(4);
             assetGroupOptions.Name = "assetGroupOptions";

@@ -565,7 +565,17 @@ namespace AssetStudio.GUI
                                 exportPath = Path.Combine(savePath, Path.GetFileName(asset.SourceFile.originalPath) + "_export", asset.SourceFile.fileName);
                             }
                             break;
-                        default:
+						case AssetGroupOption.ByContainerAndFilename: //container path and file
+							if (!string.IsNullOrEmpty(asset.Container))
+							{
+								exportPath = Path.Combine(savePath, Path.GetDirectoryName(asset.Container), Path.GetFileNameWithoutExtension(asset.Container));
+							}
+							else
+							{
+								exportPath = savePath;
+							}
+							break;
+						default:
                             exportPath = savePath;
                             break;
                     }
