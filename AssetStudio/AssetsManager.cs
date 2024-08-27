@@ -743,11 +743,13 @@ namespace AssetStudio
                                     }
                                     else
                                     {
-                                        m_Sprite.m_SpriteAtlas.TryGet(out var m_SpriteAtlaOld);
-                                        if (m_SpriteAtlaOld.m_IsVariant)
+                                        if (m_Sprite.m_SpriteAtlas.TryGet(out var m_SpriteAtlaOld))
                                         {
-                                            Logger.Verbose($"Fetched Sprite with {m_Sprite.m_PathID} in file {m_Sprite.assetsFile.fileName} has a variant of the origianl SpriteAtlas, disposing of the variant and assinging to the parent SpriteAtlas...");
-                                            m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
+                                            if (m_SpriteAtlaOld.m_IsVariant)
+                                            {
+                                                Logger.Verbose($"Fetched Sprite with {m_Sprite.m_PathID} in file {m_Sprite.assetsFile.fileName} has a variant of the origianl SpriteAtlas, disposing of the variant and assinging to the parent SpriteAtlas...");
+                                                m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
+                                            }
                                         }
                                     }
                                 }
