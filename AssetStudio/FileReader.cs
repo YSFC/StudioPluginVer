@@ -227,7 +227,13 @@ namespace AssetStudio
                     case GameType.SchoolGirlStrikers:
                         reader = DecryptSchoolGirlStrikers(reader);
                         break;
-                }
+                    case GameType.FirstByteXor:
+                        reader = DecryptFirstByteXor(reader);
+                        break;
+					case GameType.PathToNowhere:
+						reader = DecryptPathToNowhere(reader);
+						break;
+				}
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)
             {

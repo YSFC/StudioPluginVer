@@ -6,7 +6,7 @@ using AssetStudio;
 using SixLabors.Fonts.Unicode;
 using ZstdSharp.Unsafe;
 
-namespace UnityLive2DExtractor
+namespace UnityLive2DExtractorSP
 {
     class CubismMotion3Converter
     {
@@ -133,10 +133,6 @@ namespace UnityLive2DExtractor
             {
                 var index = boneName.LastIndexOf('/');
                 id = boneName.Substring(index + 1);
-                if(index == -1)
-                {
-                    return;
-                }
                 target = boneName.Substring(0, index);
                 if (target == "Parameters")
                 {

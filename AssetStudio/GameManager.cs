@@ -50,7 +50,9 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.SchoolGirlStrikers));
             Games.Add(index++, new Game(GameType.ExAstris));
             Games.Add(index++, new Game(GameType.PerpetualNovelty));
-        }
+			Games.Add(index++, new Game(GameType.FirstByteXor));
+            Games.Add(index++, new Game(GameType.PathToNowhere));
+		}
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
         {
@@ -168,10 +170,12 @@ namespace AssetStudio
         MuvLuvDimensions,
         PartyAnimals,
         LoveAndDeepspace,
-        SchoolGirlStrikers,
-        ExAstris,
+        SchoolGirlStrikers,		
+		ExAstris,
         PerpetualNovelty,
-    }
+		FirstByteXor,
+		PathToNowhere
+	}
 
     public static class GameTypes
     {

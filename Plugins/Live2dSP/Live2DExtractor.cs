@@ -13,9 +13,8 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
-namespace UnityLive2DExtractor
+namespace UnityLive2DExtractorSP
 {
     internal class Live2DExtractor
     {
@@ -61,10 +60,6 @@ namespace UnityLive2DExtractor
                         var preCurve = track.Curve[j - 1];
                         if (Math.Abs(curve.time - preCurve.time - 0.01f) < 0.0001f) //InverseSteppedSegment
                         {
-                            if (j + 2 > track.Curve.Count())
-                            {
-                                continue;
-                            }
                             var nextCurve = track.Curve[j + 1];
                             if (nextCurve.value == curve.value)
                             {
@@ -160,6 +155,7 @@ namespace UnityLive2DExtractor
                                 }
                             }
                             break;
+
                         case AssetBundle m_AssetBundle:
                             foreach (var m_Container in m_AssetBundle.m_Container)
                             {
@@ -176,6 +172,7 @@ namespace UnityLive2DExtractor
                                 }
                             }
                             break;
+
                         case ResourceManager m_ResourceManager:
                             foreach (var m_Container in m_ResourceManager.m_Container)
                             {
@@ -188,45 +185,41 @@ namespace UnityLive2DExtractor
                     }
                 }			
 			}
-			var basePathList = new List<string>();
-			var mycustomPathList = new List<string>();
-			foreach (var cubismMoc in cubismMocs)
+            var basePathList = new List<string>();
+            foreach (var cubismMoc in cubismMocs)
             {
                 var container = containers[cubismMoc];
-				var basePath = container.Substring(0, container.LastIndexOf("."));
+				var basePath = container.Substring(0, container.LastIndexOf("/"));
+				basePath = basePath.Substring(0, basePath.LastIndexOf("/"));
 				basePathList.Add(basePath);
-				//这里是自定义规则基文件路径的处理，修改这块以适应不同的游戏
-				//var temps = Regex.Match(basePath, @"(.+?/\d+_.+?)/");
-				//mycustomPathList.Add(temps.Groups[1].Value);
-				//basePath = basePath.Substring(0, basePath.LastIndexOf("/"));
-				//basePath = basePath.Substring(0, basePath.LastIndexOf("/"));
-				//mycustomPathList.Add(basePath);
-			}
-			mycustomPathList.RemoveAll(x => x.Length == 0);
-            var lookup = containers.ToLookup(x => basePathList.Find(b => x.Value.Contains(b) && (x.Value.Length == b.Length || x.Value[b.Length] == '.' || x.Value[b.Length] == '/')), x => x.Key);
-            //var lookup = containers.ToLookup(x => basePathList.Find(b => (x.Value.Contains(b) && (x.Value.Length == b.Length || (x.Value.Length > b.Length && (x.Value[b.Length] == '.' || x.Value[b.Length] == '/')))) || x.Value.Contains(b.Split('/').Last())), x => x.Key);
-
-            //下面是用自定义规则的操作，修改可以适应不同游戏
-            //var lookup = containers.ToLookup(x => mycustomPathList.Find(b => x.Value.Contains(b)), x => x.Key);
-
-
+            }
+            var lookup = containers.ToLookup(x => basePathList.Find(b => x.Value.Contains(b)), x => x.Key);
             var baseDestPath = Path.Combine(Path.GetDirectoryName(folderPath), "Live2DOutput");
-			foreach (var assets in lookup)
-			{
-				var key = assets.Key;
-				if (key == null)
-					continue;
-				var name = key.Substring(key.LastIndexOf("/") + 1);
-				Console.WriteLine($"Extract {key}");
 
+			
+
+			foreach (var assets in lookup)
+            {
 				var monoBehaviours = new List<MonoBehaviour>();
 				var texture2Ds = new List<Texture2D>();
 				var gameObjects = new List<GameObject>();
 				var animationClips = new List<AnimationClip>();
 				List<Animator> animators = new List<Animator>();				
 
+				var key = assets.Key;
+                if (key == null)
+                {
+                    continue;
+                }
+                var name = key.Substring(key.LastIndexOf("/") + 1);
+                Console.WriteLine($"Extract {key}");
+
 				foreach (var asset in assets)
 				{
+                    if (containers[asset].Contains("/effect"))
+                    {
+                        continue;
+                    }
 					if (asset is MonoBehaviour m_MonoBehaviour)
 					{
 						monoBehaviours.Add(m_MonoBehaviour);
@@ -255,18 +248,9 @@ namespace UnityLive2DExtractor
                 Directory.CreateDirectory(destPath);
                 Directory.CreateDirectory(destTexturePath);
                 Directory.CreateDirectory(destAnimationPath);
-
-				//physics
-				var pp = monoBehaviours.Where(x =>
-				{
-					if (x.m_Script.TryGet(out var m_Script))
-					{
-						return m_Script.m_ClassName == "CubismPhysicsController";
-					}
-					return false;
-				}).ToList();
-
-				var physics = monoBehaviours.FirstOrDefault(x =>
+                            
+                //physics
+                var physics = monoBehaviours.FirstOrDefault(x =>
                 {
                     if (x.m_Script.TryGet(out var m_Script))
                     {
@@ -445,11 +429,7 @@ namespace UnityLive2DExtractor
                 var eyeBlinkParameters = monoBehaviours.Where(x =>
                 {
                     x.m_Script.TryGet(out var m_Script);
-					if (x.m_Script.IsNull)
-					{
-						return false;
-					}
-					return m_Script.m_ClassName == "CubismEyeBlinkParameter";
+                    return m_Script.m_ClassName == "CubismEyeBlinkParameter";
                 }).Select(x =>
                 {
                     x.m_GameObject.TryGet(out var m_GameObject);
@@ -467,11 +447,7 @@ namespace UnityLive2DExtractor
                 var lipSyncParameters = monoBehaviours.Where(x =>
                 {
                     x.m_Script.TryGet(out var m_Script);
-					if (x.m_Script.IsNull)
-					{
-						return false;
-					}
-					return m_Script.m_ClassName == "CubismMouthParameter";
+                    return m_Script.m_ClassName == "CubismMouthParameter";
                 }).Select(x =>
                 {
                     x.m_GameObject.TryGet(out var m_GameObject);
@@ -514,389 +490,7 @@ namespace UnityLive2DExtractor
             Console.Read();
         }
 
-		public static void ExtractFiles(AssetsManager assetsManager, string folderPath)
-		{
-			Console.WriteLine($"Loading...");
-			string[] files = Directory.GetFiles(folderPath, "*.*", SearchOption.AllDirectories);
-            foreach (var abfile in files)
-			{
-				assetsManager.Clear();
-				assetsManager.LoadFiles(new string[] { abfile });
-        
-                if (assetsManager.assetsFileList.Count == 0)
-                    return;
-                var containers = new Dictionary<AssetStudio.Object, string>();
-                var cubismMocs = new List<MonoBehaviour>();
-                foreach (var assetsFile in assetsManager.assetsFileList)
-                {
-                    foreach (var asset in assetsFile.Objects)
-                    {
-                        switch (asset)
-                        {
-                            case MonoBehaviour m_MonoBehaviour:
-                                if (m_MonoBehaviour.m_Script.TryGet(out var m_Script))
-                                {
-                                    if (m_Script.m_ClassName == "CubismMoc")
-                                    {
-                                        cubismMocs.Add(m_MonoBehaviour);
-                                    }
-                                }
-                                break;
-                            case AssetBundle m_AssetBundle:
-                                foreach (var m_Container in m_AssetBundle.m_Container)
-                                {
-                                    var preloadIndex = m_Container.Value.preloadIndex;
-                                    var preloadSize = m_Container.Value.preloadSize;
-                                    var preloadEnd = preloadIndex + preloadSize;
-                                    for (int k = preloadIndex; k < preloadEnd; k++)
-                                    {
-                                        var pptr = m_AssetBundle.m_PreloadTable[k];
-                                        if (pptr.TryGet(out var obj))
-                                        {
-                                            containers[obj] = m_Container.Key;
-                                        }
-                                    }
-                                }
-                                break;
-                            case ResourceManager m_ResourceManager:
-                                foreach (var m_Container in m_ResourceManager.m_Container)
-                                {
-                                    if (m_Container.Value.TryGet(out var obj))
-                                    {
-                                        containers[obj] = m_Container.Key;
-                                    }
-                                }
-                                break;
-                        }
-                    }
-                }
-                var basePathList = new List<string>();
-                var mycustomPathList = new List<string>();
-                foreach (var cubismMoc in cubismMocs)
-                {
-                    var container = containers[cubismMoc];
-                    var basePath = container.Substring(0, container.LastIndexOf("."));
-                    basePathList.Add(basePath);
-					//这里是自定义规则基文件路径的处理，修改这块以适应不同的游戏
-					//var temps = Regex.Match(basePath, @"(.+?/\d+_.+?)/");
-					//basePath = basePath.Substring(0, basePath.LastIndexOf("/"));
-					//basePath = basePath.Substring(0, basePath.LastIndexOf("/"));
-					//mycustomPathList.Add(basePath);
-                }
-                mycustomPathList.RemoveAll(x => x.Length == 0);
-                var lookup = containers.ToLookup(x => basePathList.Find(b => x.Value.Contains(b) && (x.Value.Length == b.Length || x.Value[b.Length] == '.' || x.Value[b.Length] == '/')), x => x.Key);
-                //var lookup = containers.ToLookup(x => basePathList.Find(b => (x.Value.Contains(b) && (x.Value.Length == b.Length || (x.Value.Length > b.Length && (x.Value[b.Length] == '.' || x.Value[b.Length] == '/')))) || x.Value.Contains(b.Split('/').Last())), x => x.Key);
-
-                //下面是用自定义规则的操作，修改可以适应不同游戏
-                //var lookup = containers.ToLookup(x => mycustomPathList.Find(b => x.Value.Contains(b)), x => x.Key);
-
-
-                var baseDestPath = Path.Combine(Path.GetDirectoryName(folderPath), "Live2DOutput");
-                foreach (var assets in lookup)
-                {
-                    var key = assets.Key;
-                    if (key == null)
-                        continue;
-                    var name = key.Substring(key.LastIndexOf("/") + 1);
-                    Console.WriteLine($"Extract {key}");
-
-                    var monoBehaviours = new List<MonoBehaviour>();
-                    var texture2Ds = new List<Texture2D>();
-                    var gameObjects = new List<GameObject>();
-                    var animationClips = new List<AnimationClip>();
-                    List<Animator> animators = new List<Animator>();
-
-                    foreach (var asset in assets)
-                    {
-                        if (asset is MonoBehaviour m_MonoBehaviour)
-                        {
-                            monoBehaviours.Add(m_MonoBehaviour);
-                        }
-                        else if (asset is Texture2D m_Texture2D)
-                        {
-                            texture2Ds.Add(m_Texture2D);
-                        }
-                        else if (asset is GameObject m_GameObject)
-                        {
-                            gameObjects.Add(m_GameObject);
-                        }
-                        else if (asset is AnimationClip m_AnimationClip)
-                        {
-                            animationClips.Add(m_AnimationClip);
-                        }
-                        else if (asset is Animator m_Animator)
-                        {
-                            animators.Add(m_Animator);
-                        }
-                    }
-
-                    var destPath = Path.Combine(baseDestPath, key) + Path.DirectorySeparatorChar;
-                    var destTexturePath = Path.Combine(destPath, "textures") + Path.DirectorySeparatorChar;
-                    var destAnimationPath = Path.Combine(destPath, "motions") + Path.DirectorySeparatorChar;
-                    Directory.CreateDirectory(destPath);
-                    Directory.CreateDirectory(destTexturePath);
-                    Directory.CreateDirectory(destAnimationPath);
-
-                    //physics
-                    var pp = monoBehaviours.Where(x =>
-                    {
-                        if (x.m_Script.TryGet(out var m_Script))
-                        {
-                            return m_Script.m_ClassName == "CubismPhysicsController";
-                        }
-                        return false;
-                    }).ToList();
-
-                    var physics = monoBehaviours.FirstOrDefault(x =>
-                    {
-                        if (x.m_Script.TryGet(out var m_Script))
-                        {
-                            return m_Script.m_ClassName == "CubismPhysicsController";
-                        }
-                        return false;
-                    });
-                    if (physics != null)
-                    {
-                        File.WriteAllText($"{destPath}{name}.physics3.json", ParsePhysics(physics));
-                    }
-                    //moc
-                    var moc = monoBehaviours.First(x =>
-                    {
-                        if (x.m_Script.TryGet(out var m_Script))
-                        {
-                            return m_Script.m_ClassName == "CubismMoc";
-                        }
-                        return false;
-                    });
-                    File.WriteAllBytes($"{destPath}{name}.moc3", ParseMoc(moc));
-                    //texture
-                    var textures = new SortedSet<string>();
-                    foreach (var texture2D in texture2Ds)
-                    {
-                        var texture2dConverter = new Texture2DConverter(texture2D);
-                        var buff = ArrayPool<byte>.Shared.Rent(texture2D.m_Width * texture2D.m_Height * 4);
-                        try
-                        {
-                            if (texture2dConverter.DecodeTexture2D(buff))
-                            {
-                                textures.Add($"textures/{texture2D.m_Name}.png");
-                                var image = Image.LoadPixelData<Bgra32>(buff, texture2D.m_Width, texture2D.m_Height);
-                                using (image)
-                                {
-                                    using var file = File.OpenWrite($"{destTexturePath}{texture2D.m_Name}.png");
-                                    image.Mutate(x => x.Flip(FlipMode.Vertical));
-                                    image.WriteToStream(file, ImageFormat.Png);
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            ArrayPool<byte>.Shared.Return(buff);
-                        }
-                    }
-                    //motion
-                    var motions = new List<string>();
-                    foreach (Animator animator in animators)
-                    {
-                        CreateMotion3Json(animator, animationClips,
-                            (gameObject, name, json) =>
-                            {
-                                string savePath = Path.Combine(destAnimationPath, name + ".motion3.json");
-                                Directory.CreateDirectory(Directory.GetParent(savePath).ToString());
-                                File.WriteAllText(savePath, json);
-                                motions.Add($"motions/{name}.motion3.json");
-                                Console.WriteLine($"Save {savePath} successfully.");
-                            }
-                        );
-                    }
-
-                    //var rootTransform = gameObjects[0].m_Transform;
-                    //while (rootTransform.m_Father.TryGet(out var m_Father))
-                    //{
-                    //    rootTransform = m_Father;
-                    //}
-                    //rootTransform.m_GameObject.TryGet(out var rootGameObject);
-                    //var converter = new CubismMotion3Converter(rootGameObject, animationClips.ToArray());
-                    //foreach (ImportedKeyframedAnimation animation in converter.AnimationList)
-                    //{
-                    //    var json = new CubismMotion3Json
-                    //    {
-                    //        Version = 3,
-                    //        Meta = new CubismMotion3Json.SerializableMeta
-                    //        {
-                    //            Duration = animation.Duration,
-                    //            Fps = animation.SampleRate,
-                    //            Loop = true,
-                    //            AreBeziersRestricted = true,
-                    //            CurveCount = animation.TrackList.Count,
-                    //            UserDataCount = animation.Events.Count
-                    //        },
-                    //        Curves = new CubismMotion3Json.SerializableCurve[animation.TrackList.Count]
-                    //    };
-                    //    int totalSegmentCount = 1;
-                    //    int totalPointCount = 1;
-                    //    for (int i = 0; i < animation.TrackList.Count; i++)
-                    //    {
-                    //        var track = animation.TrackList[i];
-                    //        json.Curves[i] = new CubismMotion3Json.SerializableCurve
-                    //        {
-                    //            Target = track.Target,
-                    //            Id = track.Name,
-                    //            Segments = new List<float> { 0f, track.Curve[0].value }
-                    //        };
-                    //        for (var j = 1; j < track.Curve.Count; j++)
-                    //        {
-                    //            var curve = track.Curve[j];
-                    //            var preCurve = track.Curve[j - 1];
-                    //            if (Math.Abs(curve.time - preCurve.time - 0.01f) < 0.0001f) //InverseSteppedSegment
-                    //            {
-                    //                var nextCurve = track.Curve[j + 1];
-                    //                if (nextCurve.value == curve.value)
-                    //                {
-                    //                    json.Curves[i].Segments.Add(3f);
-                    //                    json.Curves[i].Segments.Add(nextCurve.time);
-                    //                    json.Curves[i].Segments.Add(nextCurve.value);
-                    //                    j += 1;
-                    //                    totalPointCount += 1;
-                    //                    totalSegmentCount++;
-                    //                    continue;
-                    //                }
-                    //            }
-                    //            if (float.IsPositiveInfinity(curve.inSlope)) //SteppedSegment
-                    //            {
-                    //                json.Curves[i].Segments.Add(2f);
-                    //                json.Curves[i].Segments.Add(curve.time);
-                    //                json.Curves[i].Segments.Add(curve.value);
-                    //                totalPointCount += 1;
-                    //            }
-                    //            else if (preCurve.outSlope == 0f && Math.Abs(curve.inSlope) < 0.0001f) //LinearSegment
-                    //            {
-                    //                json.Curves[i].Segments.Add(0f);
-                    //                json.Curves[i].Segments.Add(curve.time);
-                    //                json.Curves[i].Segments.Add(curve.value);
-                    //                totalPointCount += 1;
-                    //            }
-                    //            else //BezierSegment
-                    //            {
-                    //                var tangentLength = (curve.time - preCurve.time) / 3f;
-                    //                json.Curves[i].Segments.Add(1f);
-                    //                json.Curves[i].Segments.Add(preCurve.time + tangentLength);
-                    //                json.Curves[i].Segments.Add(preCurve.outSlope * tangentLength + preCurve.value);
-                    //                json.Curves[i].Segments.Add(curve.time - tangentLength);
-                    //                json.Curves[i].Segments.Add(curve.value - curve.inSlope * tangentLength);
-                    //                json.Curves[i].Segments.Add(curve.time);
-                    //                json.Curves[i].Segments.Add(curve.value);
-                    //                totalPointCount += 3;
-                    //            }
-                    //            totalSegmentCount++;
-                    //        }
-                    //    }
-                    //    json.Meta.TotalSegmentCount = totalSegmentCount;
-                    //    json.Meta.TotalPointCount = totalPointCount;
-
-                    //    json.UserData = new CubismMotion3Json.SerializableUserData[animation.Events.Count];
-                    //    var totalUserDataSize = 0;
-                    //    for (var i = 0; i < animation.Events.Count; i++)
-                    //    {
-                    //        var @event = animation.Events[i];
-                    //        json.UserData[i] = new CubismMotion3Json.SerializableUserData
-                    //        {
-                    //            Time = @event.time,
-                    //            Value = @event.value
-                    //        };
-                    //        totalUserDataSize += @event.value.Length;
-                    //    }
-                    //    json.Meta.TotalUserDataSize = totalUserDataSize;
-
-                    //    motions.Add($"motions/{animation.Name}.motion3.json");
-                    //    File.WriteAllText($"{destAnimationPath}{animation.Name}.motion3.json", JsonConvert.SerializeObject(json, Formatting.Indented, new MyJsonConverter()));
-                    //}
-                    //model
-                    var job = new JObject();
-                    var jarray = new JArray();
-                    foreach (var motion in motions)
-                    {
-                        var tempjob = new JObject();
-                        tempjob["File"] = motion;
-                        jarray.Add(tempjob);
-                    }
-                    job[""] = jarray;
-
-                    var groups = new List<CubismModel3Json.SerializableGroup>();
-                    var eyeBlinkParameters = monoBehaviours.Where(x =>
-                    {
-                        x.m_Script.TryGet(out var m_Script);
-                        if (x.m_Script.IsNull)
-                        {
-                            return false;
-                        }
-                        return m_Script.m_ClassName == "CubismEyeBlinkParameter";
-                    }).Select(x =>
-                    {
-                        x.m_GameObject.TryGet(out var m_GameObject);
-                        return m_GameObject.m_Name;
-                    }).ToArray();
-                    if (eyeBlinkParameters.Length > 0)
-                    {
-                        groups.Add(new CubismModel3Json.SerializableGroup
-                        {
-                            Target = "Parameter",
-                            Name = "EyeBlink",
-                            Ids = eyeBlinkParameters
-                        });
-                    }
-                    var lipSyncParameters = monoBehaviours.Where(x =>
-                    {
-                        x.m_Script.TryGet(out var m_Script);
-						if (x.m_Script.IsNull)
-						{
-							return false;
-						}
-						return m_Script.m_ClassName == "CubismMouthParameter";
-                    }).Select(x =>
-                    {
-                        x.m_GameObject.TryGet(out var m_GameObject);
-                        return m_GameObject.m_Name;
-                    }).ToArray();
-                    if (lipSyncParameters.Length > 0)
-                    {
-                        groups.Add(new CubismModel3Json.SerializableGroup
-                        {
-                            Target = "Parameter",
-                            Name = "LipSync",
-                            Ids = lipSyncParameters
-                        });
-                    }
-
-                    var model3 = new CubismModel3Json
-                    {
-                        Version = 3,
-                        FileReferences = new CubismModel3Json.SerializableFileReferences
-                        {
-                            Moc = $"{name}.moc3",
-                            Textures = textures.ToArray(),
-                            //Physics = $"{name}.physics3.json",
-                            Motions = job
-                        },
-                        Groups = groups.ToArray()
-                    };
-                    if (physics != null)
-                    {
-                        model3.FileReferences.Physics = $"{name}.physics3.json";
-                    }
-                    File.WriteAllText($"{destPath}{name}.model3.json", JsonConvert.SerializeObject(model3, Formatting.Indented));
-
-                    //monoBehaviours.Clear();
-                    //texture2Ds.Clear();
-                    //gameObjects.Clear();
-                    //animationClips.Clear();
-                }
-            }
-			Console.WriteLine("Done!");
-			Console.Read();
-		}
-
-		public static void ForceSaveAsMoc3(IEnumerable<AssetItem> assetItems, string folder, bool withPathID)
+        public static void ForceSaveAsMoc3(IEnumerable<AssetItem> assetItems, string folder, bool withPathID)
         {
             assetItems.Apply(asset =>
             {

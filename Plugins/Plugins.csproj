@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>-->
     <OutputPath>$(SolutionDir)AssetStudio.GUI\bin\$(Configuration)\$(TargetFramework)\Plugins</OutputPath>
     <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>

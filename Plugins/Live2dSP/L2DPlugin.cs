@@ -4,14 +4,14 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using UnityLive2DExtractor;
+using UnityLive2DExtractorSP;
 
-namespace Plugins.Ahykal
+namespace Plugins.JDYY
 {
-    public class L2DPlugin : IAssetPlugin
+    public class L2DPluginSP : IAssetPlugin
     {
-        public string Name => "Ahykal.Live2D";
-        public string RegisterMenuText => "Live2D";
+        public string Name => "JDYY.Live2D";
+        public string RegisterMenuText => "Live2DSP_MMT";
         public RegisterMenuType RegisterMenuType => RegisterMenuType.Folder;
 
         public void Run(PluginConnection connection)
@@ -25,16 +25,7 @@ namespace Plugins.Ahykal
                     await Console.Out.WriteLineAsync("Done!");
                 });
             };
-			this.SetCommand(new ToolStripMenuItem("ExtractFromFolderFiles")).Click += delegate
-			{
-				connection.Mainform.OpenFolderDelegate(async o =>
-				{
-					var assetsManager = connection.Mainform.CreateAssetsManager();
-					await Task.Run(() => Live2DExtractor.ExtractFiles(assetsManager, o.Folder));
-					await Console.Out.WriteLineAsync("Done!");
-				});
-			};
-			this.SetCommand(new ToolStripSeparator());
+            this.SetCommand(new ToolStripSeparator());
             var withPathIDCheck = new ToolStripMenuItem("ExportWithPathIDFolder") { CheckOnClick = true, Checked = true };
             this.SetCommand(withPathIDCheck);
 

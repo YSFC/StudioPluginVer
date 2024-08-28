@@ -1124,5 +1124,47 @@ namespace AssetStudio
             ms.Position = 0;
             return new FileReader(reader.FullPath, ms);
         }
-    }
+
+
+		public static FileReader DecryptFirstByteXor(FileReader reader)
+		{
+			Logger.Verbose($"Attempting to decrypt file {reader.FileName} with FirstByteXor encryption");
+
+			var data = reader.ReadBytes((int)reader.Remaining);
+
+            byte key = (byte)(0x55 ^ data[0]);
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] ^= key;
+            }
+
+			Logger.Verbose("Decrypted FirstByteXor file successfully !!");
+
+			MemoryStream ms = new();
+			ms.Write(data);
+			ms.Position = 0;
+			return new FileReader(reader.FullPath, ms);
+		}
+
+        public static FileReader DecryptPathToNowhere(FileReader reader)
+        {
+			Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Path to Nowhere encryption");
+
+			var data = reader.ReadBytes((int)reader.Remaining);
+
+			byte key = (byte)(0x55 ^ data[50]);
+			for (int i = 50; i < data.Length; i++)
+			{
+				data[i] ^= key;
+			}
+
+			Logger.Verbose("Decrypted Path to Nowhere file successfully !!");
+
+			MemoryStream ms = new();
+			ms.Write(data.Skip(50).ToArray());
+			ms.Position = 0;
+			return new FileReader(reader.FullPath, ms);
+		}
+
+	}
 }

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using AssetStudio;
 
-namespace UnityLive2DExtractor
+namespace UnityLive2DExtractorSP
 {
     public class CubismPhysicsNormalizationTuplet
     {
@@ -112,16 +110,8 @@ namespace UnityLive2DExtractor
 
         public CubismPhysicsSubRig(EndianBinaryReader reader)
         {
-            //var stringLenght = reader.ReadInt32();
-            //var rigName = Encoding.UTF8.GetString(reader.ReadBytes(stringLenght));
-            //var seek = 4 - (stringLenght % 4);
-            //if (seek != 4)
-            //{
-            //    reader.ReadBytes(seek);
-            //}
             var numInput = reader.ReadInt32();
-            if (numInput == 0) numInput = 1;
-			Input = new CubismPhysicsInput[numInput];
+            Input = new CubismPhysicsInput[numInput];
             for (int i = 0; i < numInput; i++)
             {
                 Input[i] = new CubismPhysicsInput(reader);
@@ -152,17 +142,8 @@ namespace UnityLive2DExtractor
             SubRigs = new CubismPhysicsSubRig[numSubRigs];
             for (int i = 0; i < numSubRigs; i++)
             {
-                try
-                {
-                    SubRigs[i] = new CubismPhysicsSubRig(reader);
-                }
-                catch
-                {
-                    break;
-                }
+                SubRigs[i] = new CubismPhysicsSubRig(reader);
             }
-            SubRigs = SubRigs.Where(x => x != null).ToArray();
-
-		}
+        }
     }
 }
