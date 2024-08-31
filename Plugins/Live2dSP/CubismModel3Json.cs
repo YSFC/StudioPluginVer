@@ -12,14 +12,16 @@ namespace UnityLive2DExtractorSP
         public int Version;
         public SerializableFileReferences FileReferences;
         public SerializableGroup[] Groups;
+		public JObject Options;
 
-        public class SerializableFileReferences
+		public class SerializableFileReferences
         {
             public string Moc;
             public string[] Textures;
             public string Physics;
-            public JObject Motions;
-        }
+			public JObject Motions;
+	
+		}
 
         public class SerializableGroup
         {

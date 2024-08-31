@@ -52,7 +52,7 @@ namespace Plugins.Ahykal
                     Live2DExtractor.SaveByAnimators(AssetList.GetSelectedAssets().Where(x => x.Type == ClassIDType.Animator), o.Folder, withPathIDCheck.Checked);
                 });
             };
-            this.SetCommand(new ToolStripMenuItem("SaveMotionsBySelected") { ToolTipText = "Select target Animators&AnimationClips then click." }).Click += delegate
+			this.SetCommand(new ToolStripMenuItem("SaveMotionsBySelected") { ToolTipText = "Select target Animators&AnimationClips then click." }).Click += delegate
             {
                 connection.Mainform.OpenFolderDelegate(o =>
                 {

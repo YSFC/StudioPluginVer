@@ -13,10 +13,15 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 
 namespace UnityLive2DExtractorSP
 {
-    internal class Live2DExtractor
+	/// <summary>
+	/// SP version
+	/// for specific games
+	/// </summary>
+	internal class Live2DExtractor
     {
         public static void CreateMotion3Json(GameObject gameObject, List<AnimationClip> animationClips, Action<GameObject, string, string> JsonMap)
         {
@@ -132,7 +137,7 @@ namespace UnityLive2DExtractorSP
             }
         }
 
-        public static void Extract(AssetsManager assetsManager, string folderPath)
+        public static void Extract_MMT(AssetsManager assetsManager, string folderPath)
         {
             Console.WriteLine($"Loading...");
             assetsManager.LoadFolder(folderPath);
@@ -490,7 +495,7 @@ namespace UnityLive2DExtractorSP
             Console.Read();
         }
 
-        public static void ForceSaveAsMoc3(IEnumerable<AssetItem> assetItems, string folder, bool withPathID)
+		public static void ForceSaveAsMoc3(IEnumerable<AssetItem> assetItems, string folder, bool withPathID)
         {
             assetItems.Apply(asset =>
             {
@@ -665,7 +670,148 @@ namespace UnityLive2DExtractorSP
             Console.WriteLine("Done!");
         }
 
-        public static void SaveMotionsBySelectedAnimatorClips(string folder, bool withPathID)
+		public static void SaveByAnimators_PTN(IEnumerable<AssetItem> animators, string folder, bool withPathID)
+		{
+			animators.Apply(asset =>
+			{
+				var animator = asset.Asset as Animator;
+				if (animator.m_GameObject.TryGet(out var gameObject))
+				{
+					bool flag = false;
+					bool withPhysic = false;
+					byte[] mocByte = null;
+					string physicJson = string.Empty;
+					List<AnimationClip> animationClips;
+					foreach (var component in gameObject.m_Components)
+					{
+						if (component.TryGet(out MonoBehaviour monoBehaviour))
+						{
+							var dict = monoBehaviour.ToDictionary();
+							if (!flag && dict.Contains("_moc") && monoBehaviour.TryGetComponent(dict["_moc"] as OrderedDictionary, out MonoBehaviour moc))
+							{
+								flag = true;
+								mocByte = ParseMoc(moc);
+								continue;
+							}
+							if (!withPhysic && dict.Contains("_rig"))
+							{
+								withPhysic = true;
+								physicJson = ParsePhysics(monoBehaviour);
+								continue;
+							}
+							if (flag && withPhysic)
+								break;
+						}
+					}
+					if (flag)
+					{
+						string subfolder = withPathID ? Path.Combine(folder, gameObject.Name, gameObject.m_PathID.ToString()) : Path.Combine(folder, gameObject.Name);
+						Directory.CreateDirectory(subfolder);
+						var texturePaths = new List<string>();
+						#region saveMoc3
+
+						string mocPath = Path.Combine(subfolder, gameObject.Name + ".moc3");
+						File.WriteAllBytes(mocPath, mocByte);
+						Console.WriteLine($"------\nSave {mocPath} successfully.");
+
+						#endregion saveMoc3
+
+						#region savePhysic
+
+						if (withPhysic)
+						{
+							string phyPath = Path.Combine(subfolder, gameObject.Name + ".physics3.json");
+							File.WriteAllText(phyPath, physicJson);
+							Console.WriteLine($"Save {phyPath} successfully.");
+						}
+
+						#endregion savePhysic
+
+						#region saveTexture
+
+						if (gameObject.m_Transform.m_Children.FirstOrDefault(x => x.TryGet(out Transform result) && result.m_GameObject.Name == "Drawables").TryGet(out Transform result))
+						{
+							var textures = result.m_Children.ApplyFunc(x =>
+								(x.TryGet(out Transform artMeshTransform)
+								&& artMeshTransform.m_GameObject.TryGet(out GameObject artMesh)
+								&& artMesh.m_Components[4].TryGet(out MonoBehaviour cubismRenderer)
+								&& cubismRenderer.TryGetRefInfo("_mainTexture", out RefInfo token))
+								? token : null,
+								true).ToHashSet(new RefInfo())
+								.ApplyFunc(x => x.TryGet(result, out Texture2D tex) ? tex : null, true);
+							string imgRoot = Path.Combine(subfolder, "Textures");
+							Directory.CreateDirectory(imgRoot);
+							textures.SaveTextures(imgRoot);
+                            texturePaths = textures.Select(x => $"Textures/{x.m_Name}.png").ToList();
+						}
+
+						#endregion saveTexture
+
+						#region saveMotion
+						var jarray = new JArray();
+						var live2dbasename = gameObject.Name.Replace("char2d_", "");
+                        var thisClips = AssetList.ExportableAssets.Where(x => x.Type == ClassIDType.AnimationClip && x.Container.Contains("animations2d/characters/" + live2dbasename + "/"));
+						if (thisClips.Count() != 0)
+						{
+                            animationClips = thisClips.Select(x => x.Asset as AnimationClip).ToList();
+							var count = animationClips.Count;
+							Console.WriteLine($"Get {count} motions.");
+							if (animationClips.Count > 0)
+							{
+								int i = 0;
+								CreateMotion3Json(gameObject, animationClips, (g, name, m) =>
+								{
+									string motionRoot = Path.Combine(subfolder, "Motions");
+									Directory.CreateDirectory(motionRoot);
+									if (name == "")
+									{
+										name = i.ToString();
+									}
+									string motionPath = Path.Combine(motionRoot, name + ".motion3.json");
+									var tempjob = new JObject();
+                                    tempjob["File"] = $"Motions/{name}.motion3.json";
+									jarray.Add(tempjob);
+									File.WriteAllText(motionPath, m);
+									Console.WriteLine($"Save {motionPath} successfully.");
+									i += 1;
+								});
+							}
+						}
+
+						#endregion saveMotion
+
+						var job = new JObject();
+                        var options = new JObject();
+                        options["ScaleFactor"] = 0.05;
+						job[""] = jarray;
+						var groups = new List<CubismModel3Json.SerializableGroup>();
+						var model3 = new CubismModel3Json
+						{
+							Version = 3,
+							FileReferences = new CubismModel3Json.SerializableFileReferences
+							{
+								Moc = gameObject.Name + ".moc3",
+								Textures = texturePaths.ToArray(),
+								//Physics = $"{name}.physics3.json",
+								Motions = job,								
+							},
+							Groups = groups.ToArray(),
+							Options = options
+						};
+						if (withPhysic)
+						{
+							model3.FileReferences.Physics = $"{gameObject.Name}.physics3.json";
+						}
+                        var model3Path = Path.Combine(subfolder, $"{gameObject.Name}.model3.json");
+						File.WriteAllText(model3Path, JsonConvert.SerializeObject(model3, Formatting.Indented));
+
+					}
+				}
+			});
+			Console.WriteLine("Done!");
+		}
+
+		public static void SaveMotionsBySelectedAnimatorClips(string folder, bool withPathID)
         {
             List<AnimationClip> animationClips = new List<AnimationClip>();
             List<Animator> animators = new List<Animator>();

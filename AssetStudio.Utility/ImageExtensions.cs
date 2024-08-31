@@ -49,6 +49,7 @@ namespace AssetStudio
             {
                 return MemoryMarshal.AsBytes(pixelSpan.Span).ToArray();
             }
+
             return null;
         }
     }

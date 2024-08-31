@@ -622,7 +622,7 @@ namespace AssetStudio
                         return;
                     }
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo, Game);
-                    try
+					try
                     {
                         Object obj = objectReader.type switch
                         {

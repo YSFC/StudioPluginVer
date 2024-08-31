@@ -288,7 +288,17 @@ namespace AssetStudio
             return ReadArray(ReadUInt16, length);
         }
 
-        public int[] ReadInt32Array(int length = -1)
+		public int[] ReadUInt16ArrayToInt32Array(int length)
+		{
+			int[] array = new int[length];
+			for (int i = 0; i < length; i++)
+			{
+				array[i] = (int)this.ReadUInt16();
+			}
+			return array;
+		}
+
+		public int[] ReadInt32Array(int length = -1)
         {
             if (length == -1)
             {

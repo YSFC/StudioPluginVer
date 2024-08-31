@@ -159,7 +159,7 @@ namespace UnityLive2DExtractor
                                     cubismMocs.Add(m_MonoBehaviour);
                                 }
                             }
-                            break;
+							break;
                         case AssetBundle m_AssetBundle:
                             foreach (var m_Container in m_AssetBundle.m_Container)
                             {
@@ -193,7 +193,7 @@ namespace UnityLive2DExtractor
 			foreach (var cubismMoc in cubismMocs)
             {
                 var container = containers[cubismMoc];
-				var basePath = container.Substring(0, container.LastIndexOf("."));
+                var basePath = container.Substring(0, container.LastIndexOf(".") == -1 ? container.Length : container.LastIndexOf("."));
 				basePathList.Add(basePath);
 				//这里是自定义规则基文件路径的处理，修改这块以适应不同的游戏
 				//var temps = Regex.Match(basePath, @"(.+?/\d+_.+?)/");
@@ -205,12 +205,12 @@ namespace UnityLive2DExtractor
 			mycustomPathList.RemoveAll(x => x.Length == 0);
             var lookup = containers.ToLookup(x => basePathList.Find(b => x.Value.Contains(b) && (x.Value.Length == b.Length || x.Value[b.Length] == '.' || x.Value[b.Length] == '/')), x => x.Key);
             //var lookup = containers.ToLookup(x => basePathList.Find(b => (x.Value.Contains(b) && (x.Value.Length == b.Length || (x.Value.Length > b.Length && (x.Value[b.Length] == '.' || x.Value[b.Length] == '/')))) || x.Value.Contains(b.Split('/').Last())), x => x.Key);
+            
+			//下面是用自定义规则的操作，修改可以适应不同游戏
+			//var lookup = containers.ToLookup(x => mycustomPathList.Find(b => x.Value.Contains(b)), x => x.Key);
 
-            //下面是用自定义规则的操作，修改可以适应不同游戏
-            //var lookup = containers.ToLookup(x => mycustomPathList.Find(b => x.Value.Contains(b)), x => x.Key);
 
-
-            var baseDestPath = Path.Combine(Path.GetDirectoryName(folderPath), "Live2DOutput");
+			var baseDestPath = Path.Combine(Path.GetDirectoryName(folderPath), "Live2DOutput");
 			foreach (var assets in lookup)
 			{
 				var key = assets.Key;
@@ -285,7 +285,7 @@ namespace UnityLive2DExtractor
                     {
                         return m_Script.m_ClassName == "CubismMoc";
                     }
-                    return false;
+					return false;
                 });
                 File.WriteAllBytes($"{destPath}{name}.moc3", ParseMoc(moc));
                 //texture
@@ -449,7 +449,11 @@ namespace UnityLive2DExtractor
 					{
 						return false;
 					}
-					return m_Script.m_ClassName == "CubismEyeBlinkParameter";
+					if (m_Script == null)
+					{
+						return false;
+					}
+					return !string.IsNullOrWhiteSpace(m_Script.m_ClassName) && m_Script.m_ClassName == "CubismEyeBlinkParameter";
                 }).Select(x =>
                 {
                     x.m_GameObject.TryGet(out var m_GameObject);
@@ -471,7 +475,7 @@ namespace UnityLive2DExtractor
 					{
 						return false;
 					}
-					return m_Script.m_ClassName == "CubismMouthParameter";
+					return !string.IsNullOrWhiteSpace(m_Script.m_ClassName) && m_Script.m_ClassName == "CubismMouthParameter";
                 }).Select(x =>
                 {
                     x.m_GameObject.TryGet(out var m_GameObject);
@@ -991,7 +995,7 @@ namespace UnityLive2DExtractor
                                 physicJson = ParsePhysics(monoBehaviour);
                                 continue;
                             }
-                            if (flag && withPhysic)
+							if (flag && withPhysic)
                                 break;
                         }
                     }
@@ -1071,7 +1075,7 @@ namespace UnityLive2DExtractor
             Console.WriteLine("Done!");
         }
 
-        public static void SaveMotionsBySelectedAnimatorClips(string folder, bool withPathID)
+		public static void SaveMotionsBySelectedAnimatorClips(string folder, bool withPathID)
         {
             List<AnimationClip> animationClips = new List<AnimationClip>();
             List<Animator> animators = new List<Animator>();

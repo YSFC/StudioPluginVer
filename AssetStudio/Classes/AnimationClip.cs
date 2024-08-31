@@ -1837,7 +1837,7 @@ namespace AssetStudio
 
         public AnimationClip(ObjectReader reader) : base(reader)
         {
-            if (version[0] >= 5)//5.0 and up
+			if (version[0] >= 5)//5.0 and up
             {
                 m_Legacy = reader.ReadBoolean();
             }

@@ -11,21 +11,21 @@ namespace Plugins.JDYY
     public class L2DPluginSP : IAssetPlugin
     {
         public string Name => "JDYY.Live2D";
-        public string RegisterMenuText => "Live2DSP_MMT";
+        public string RegisterMenuText => "Live2DSP";
         public RegisterMenuType RegisterMenuType => RegisterMenuType.Folder;
 
         public void Run(PluginConnection connection)
         {
-            this.SetCommand(new ToolStripMenuItem("ExtractFromFolder")).Click += delegate
+            this.SetCommand(new ToolStripMenuItem("ExtractFromFolder_MMT")).Click += delegate
             {
                 connection.Mainform.OpenFolderDelegate(async o =>
                 {
                     var assetsManager = connection.Mainform.CreateAssetsManager();
-                    await Task.Run(() => Live2DExtractor.Extract(assetsManager, o.Folder));
+                    await Task.Run(() => Live2DExtractor.Extract_MMT(assetsManager, o.Folder));
                     await Console.Out.WriteLineAsync("Done!");
                 });
             };
-            this.SetCommand(new ToolStripSeparator());
+			this.SetCommand(new ToolStripSeparator());
             var withPathIDCheck = new ToolStripMenuItem("ExportWithPathIDFolder") { CheckOnClick = true, Checked = true };
             this.SetCommand(withPathIDCheck);
 
@@ -36,7 +36,14 @@ namespace Plugins.JDYY
                     Live2DExtractor.SaveByAnimators(AssetList.ExportableAssets.Where(x => x.Type == ClassIDType.Animator), o.Folder, withPathIDCheck.Checked);
                 });
             };
-            this.SetCommand(new ToolStripMenuItem("SaveBySelectedAnimators")).Click += delegate
+			this.SetCommand(new ToolStripMenuItem("SaveByAllAnimators_PTN")).Click += delegate
+			{
+				connection.Mainform.OpenFolderDelegate(o =>
+				{
+					Live2DExtractor.SaveByAnimators_PTN(AssetList.ExportableAssets.Where(x => x.Type == ClassIDType.Animator), o.Folder, withPathIDCheck.Checked);
+				});
+			};
+			this.SetCommand(new ToolStripMenuItem("SaveBySelectedAnimators")).Click += delegate
             {
                 connection.Mainform.OpenFolderDelegate(o =>
                 {

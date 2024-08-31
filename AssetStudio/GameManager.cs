@@ -201,7 +201,8 @@ namespace AssetStudio
         public static bool IsLoveAndDeepspace(this GameType type) => type == GameType.LoveAndDeepspace;
         public static bool IsExAstris(this GameType type) => type == GameType.ExAstris;
         public static bool IsPerpetualNovelty(this GameType type) => type == GameType.PerpetualNovelty;
-        public static bool IsGIGroup(this GameType type) => type switch
+		public static bool IsPathToNowhere(this GameType type) => type == GameType.PathToNowhere;
+		public static bool IsGIGroup(this GameType type) => type switch
         {
             GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre => true,
             _ => false,

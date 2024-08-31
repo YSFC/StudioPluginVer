@@ -324,7 +324,7 @@ namespace AssetStudio
             }
 
             Logger.Verbose("Parsed fake header file successfully !!");
-            return new FileReader(reader.FullPath, stream);
+			return new FileReader(reader.FullPath, stream);
         }
         
         public static FileReader DecryptFantasyOfWind(FileReader reader)
@@ -1122,8 +1122,10 @@ namespace AssetStudio
             MemoryStream ms = new();
             ms.Write(data);
             ms.Position = 0;
-            return new FileReader(reader.FullPath, ms);
-        }
+			var newReader = new FileReader(reader.FullPath, ms);
+			reader.Close();
+			return newReader;
+		}
 
 
 		public static FileReader DecryptFirstByteXor(FileReader reader)
@@ -1143,12 +1145,23 @@ namespace AssetStudio
 			MemoryStream ms = new();
 			ms.Write(data);
 			ms.Position = 0;
-			return new FileReader(reader.FullPath, ms);
+			var newReader = new FileReader(reader.FullPath, ms);
+			reader.Close();
+			return newReader;
 		}
 
         public static FileReader DecryptPathToNowhere(FileReader reader)
         {
 			Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Path to Nowhere encryption");
+
+			var signatureBytes = reader.ReadBytes(8);
+			var signature = Encoding.UTF8.GetString(signatureBytes[..7]);
+			if (signature == "UnityFS")
+			{
+				Logger.Verbose("Found UnityFS signature, file might not be encrypted");
+				reader.Position = 0;
+				return reader;
+			}			
 
 			var data = reader.ReadBytes((int)reader.Remaining);
 
@@ -1163,7 +1176,9 @@ namespace AssetStudio
 			MemoryStream ms = new();
 			ms.Write(data.Skip(50).ToArray());
 			ms.Position = 0;
-			return new FileReader(reader.FullPath, ms);
+            var newReader = new FileReader(reader.FullPath, ms);
+			reader.Close();
+			return newReader;
 		}
 
 	}
