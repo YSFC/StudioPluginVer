@@ -1,5 +1,5 @@
 # PluginVer
-在[`RazTools/Studio`](https://github.com/RazTools/Studio)基础上增加Plugins扩展，可以在Plugin菜单中使用这些指令。
+在[`Ahykal/StudioPluginVer`](https://github.com/Ahykal/StudioPluginVer)基础上增加一部分Plugins扩展，并集成[`AXiX-official/Studio`](https://github.com/AXiX-official/Studio)的更新。顺便增加几个游戏的特殊处理。
 
 * ## Live2D
 	1. ExtractFromFolder：[`UnityCNLive2DExtractor`](https://github.com/Razmoth/UnityCNLive2DExtractor)的Gui版本，用于可用`Container`完成分组的常规L2D资源。
