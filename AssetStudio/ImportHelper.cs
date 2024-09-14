@@ -299,28 +299,39 @@ namespace AssetStudio
                 return new FileReader(reader.FullPath, new MemoryStream(data));
             }
         }
+        
+        private static long GetBundleFileSize(FileReader reader, int idx)
+        {
+            reader.Position = idx;
+            reader.ReadStringToNull();
+            reader.Position += 4;
+            reader.ReadStringToNull();
+            reader.ReadStringToNull();
+            var size = reader.ReadInt64();
+            return size;
+        }
 
         public static FileReader ParseFakeHeader(FileReader reader)
         {
             Logger.Verbose($"Attempting to parse file {reader.FileName} with fake header");
 
             var stream = reader.BaseStream;
+            var fileSize = reader.Length;
             var data = reader.ReadBytes(0x1000);
             var idx = data.Search("UnityFS");
-            if (idx != -1)
+            while (idx != -1)
             {
-                Logger.Verbose($"Found fake header at offset 0x{idx:X8}");
-                var idx2 = data[(idx + 1)..].Search("UnityFS");
-                if (idx2 != -1)
+                Logger.Verbose($"Found UnityFS header at offset 0x{idx:X8}");
+                var size = GetBundleFileSize(reader, idx);
+                Logger.Verbose($"Calculated bundle size is 0x{size:X8}");
+                if (size + idx == fileSize)
                 {
-                    Logger.Verbose($"Found real header at offset 0x{idx + idx2 + 1:X8}");
-                    stream = new OffsetStream(stream, idx + idx2 + 1);
-                }
-                else
-                {
-                    Logger.Verbose("Real header was not found, assuming fake header is the real one");
+                    Logger.Verbose($"Found real header at offset 0x{idx + 1:X8}");
+                    stream.Position = 0;
                     stream = new OffsetStream(stream, idx);
+                    break;
                 }
+                idx = data.Search("UnityFS", idx + 1);
             }
 
             Logger.Verbose("Parsed fake header file successfully !!");

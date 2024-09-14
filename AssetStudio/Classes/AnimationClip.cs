@@ -492,10 +492,11 @@ namespace AssetStudio
             path = reader.ReadAlignedString();
             classID = (ClassIDType)reader.ReadInt32();
             script = new PPtr<MonoScript>(reader);
-            if (version[0] == 2022 && version[1] >= 2) //2022.2 and up
+            if ((version[0] == 2022 && version[1] >= 2) //2022.2 and up
+                || reader.IsTuanJie())
             {
                 flags = reader.ReadInt32();
-        }
+            }
         }
 
         public YAMLNode ExportYAML(int[] version)
@@ -592,7 +593,8 @@ namespace AssetStudio
             path = reader.ReadAlignedString();
             classID = reader.ReadInt32();
             script = new PPtr<MonoScript>(reader);
-            if (version[0] == 2022 && version[1] >= 2) //2022.2 and up
+            if ((version[0] == 2022 && version[1] >= 2) //2022.2 and up
+                || reader.IsTuanJie())
             {
                 flags = reader.ReadInt32();
             }
@@ -1657,6 +1659,7 @@ namespace AssetStudio
         public byte customType;
         public byte isPPtrCurve;
         public byte isIntCurve;
+        public byte isSerializeReferenceCurve;
 
         public GenericBinding() { }
 
@@ -1679,6 +1682,11 @@ namespace AssetStudio
             if (version[0] > 2022 || (version[0] == 2022 && version[1] >= 1)) //2022.1 and up
             {
                 isIntCurve = reader.ReadByte();
+            }
+
+            if (reader.IsTuanJie())
+            {
+                isSerializeReferenceCurve = reader.ReadByte();
             }
             reader.AlignStream();
         }
@@ -1891,26 +1899,38 @@ namespace AssetStudio
 
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 3))//5.3 and up
             {
-                int numEulerCurves = reader.ReadInt32();
-                m_EulerCurves = new List<Vector3Curve>();
-                for (int i = 0; i < numEulerCurves; i++)
+                var m_aclType = reader.ReadInt32();
+            }
+
+            if (!reader.IsTuanJie())
+            {
+                if (version[0] > 5 || (version[0] == 5 && version[1] >= 3))//5.3 and up
                 {
-                    m_EulerCurves.Add(new Vector3Curve(reader));
+                    int numEulerCurves = reader.ReadInt32();
+                    m_EulerCurves = new List<Vector3Curve>();
+                    for (int i = 0; i < numEulerCurves; i++)
+                    {
+                        m_EulerCurves.Add(new Vector3Curve(reader));
+                    }
+                }
+    
+                int numPCurves = reader.ReadInt32();
+                m_PositionCurves = new List<Vector3Curve>();
+                for (int i = 0; i < numPCurves; i++)
+                {
+                    m_PositionCurves.Add(new Vector3Curve(reader));
+                }
+    
+                int numSCurves = reader.ReadInt32();
+                m_ScaleCurves = new List<Vector3Curve>();
+                for (int i = 0; i < numSCurves; i++)
+                {
+                    m_ScaleCurves.Add(new Vector3Curve(reader));
                 }
             }
-
-            int numPCurves = reader.ReadInt32();
-            m_PositionCurves = new List<Vector3Curve>();
-            for (int i = 0; i < numPCurves; i++)
+            else
             {
-                m_PositionCurves.Add(new Vector3Curve(reader));
-            }
-
-            int numSCurves = reader.ReadInt32();
-            m_ScaleCurves = new List<Vector3Curve>();
-            for (int i = 0; i < numSCurves; i++)
-            {
-                m_ScaleCurves.Add(new Vector3Curve(reader));
+                reader.AlignStream();
             }
 
             int numFCurves = reader.ReadInt32();
@@ -1940,6 +1960,12 @@ namespace AssetStudio
             {
                 m_Bounds = new AABB(reader);
             }
+
+            if (reader.IsTuanJie())
+            {
+                reader.AlignStream();
+            }
+            
             if (version[0] >= 4)//4.0 and up
             {
                 if (reader.Game.Type.IsGI())
@@ -1962,7 +1988,16 @@ namespace AssetStudio
                 else
                 {
                     m_MuscleClipSize = reader.ReadUInt32();
-                    m_MuscleClip = new ClipMuscleConstant(reader);
+                    if (reader.IsTuanJie())
+                    {
+                        // TODO: parse ClipMuscleConstant
+                        reader.ReadBytes((int)m_MuscleClipSize); 
+                        //m_MuscleClip = new ClipMuscleConstant(reader);
+                    }
+                    else
+                    {
+                        m_MuscleClip = new ClipMuscleConstant(reader);
+                    }
                 }
             }
             if (reader.Game.Type.IsSRGroup())
@@ -1976,6 +2011,15 @@ namespace AssetStudio
                 }
                 var m_AclRange = new KeyValuePair<float, float>(reader.ReadSingle(), reader.ReadSingle());
             }
+
+            if (reader.IsTuanJie())
+            {
+                //m_StreamingInfo
+                var offset = reader.ReadUInt64();
+                var size = reader.ReadUInt32();
+                var path = reader.ReadAlignedString();
+            }
+            
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
             {
                 m_ClipBindingConstant = new AnimationClipBindingConstant(reader);

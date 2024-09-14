@@ -408,14 +408,29 @@ namespace AssetStudio
         private void ReadBlocksInfoAndDirectory(FileReader reader)
         {
             byte[] blocksInfoBytes;
+            var version = ParseVersion();
             if (m_Header.version >= 7 && !Game.Type.IsSRGroup())
             {
                 reader.AlignStream(16);
             }
+            else if (version[0] == 2019 && version[1] == 4)
+            {
+                var p = reader.Position;
+                var len = 16 - p % 16;
+                var bytes = reader.ReadBytes((int)len);
+                if (bytes.Any(x => x != 0))
+                {
+                    reader.Position = p;
+                }
+                else
+                {
+                    reader.AlignStream(16);
+                }
+            }
             if ((m_Header.flags & ArchiveFlags.BlocksInfoAtTheEnd) != 0) //kArchiveBlocksInfoAtTheEnd
             {
                 var position = reader.Position;
-                reader.Position = reader.BaseStream.Length - m_Header.compressedBlocksInfoSize;
+                reader.Position = m_Header.size - m_Header.compressedBlocksInfoSize;
                 blocksInfoBytes = reader.ReadBytes((int)m_Header.compressedBlocksInfoSize);
                 reader.Position = position;
             }
@@ -455,7 +470,7 @@ namespace AssetStudio
                             if (Game.Type.IsPerpetualNovelty())
                             {
                                 var key = blocksInfoBytesSpan[1];
-                                for (int j = 0; j < Math.Min(0x32, blocksInfoBytesSpan.Length); j++)
+                                for (int j = 0; j < 78; j++)
                                 {
                                     blocksInfoBytesSpan[j] ^= key;
                                 }

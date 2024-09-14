@@ -52,6 +52,7 @@ ________________________________________________________________________________
 How to use:
 
 Check the tutorial [here](https://gist.github.com/Modder4869/0f5371f8879607eb95b8e63badca227e) (Thanks to Modder4869 for the tutorial)
+
 _____________________________________________________________________________________________________________________________
 CLI Version:
 ```
@@ -77,6 +78,7 @@ Options:
   --no_index_object                                       Exclude IndexObject/MiHoYoBinData from AssetMap/Export.
   --xor_key <xor_key>                                     XOR key to decrypt MiHoYoBinData.
   --ai_file <ai_file>                                     Specify asset_index json file path (to recover GI containers).
+  --lua_script <lua_script>                               Specify Lua script path.
   --version                                               Show version information
   -?, -h, --help                                          Show help and usage information
 ```
@@ -93,3 +95,4 @@ Special Thank to:
 - Radioegor146: [Asset-indexes](https://github.com/radioegor146/gi-asset-indexes) for recovered/updated asset_index's.
 - Ds5678: [AssetRipper](https://github.com/AssetRipper/AssetRipper)[[discord](https://discord.gg/XqXa53W2Yh)] for information about Asset Formats & Parsing.
 - mafaca: [uTinyRipper](https://github.com/mafaca/UtinyRipper) for `YAML` and `AnimationClipConverter`. 
+- SiMaLaoShi: [AssetStudio_Tuanjie](https://github.com/SiMaLaoShi/AssetStudio_Tuanjie) for `TuanJie Engine` support.

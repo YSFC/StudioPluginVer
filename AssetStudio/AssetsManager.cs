@@ -6,13 +6,52 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using NLua;
 using static AssetStudio.ImportHelper;
 
 namespace AssetStudio
 {
     public class AssetsManager
     {
-        public Game Game;
+        private Game _game;
+        public Game Game
+        {
+            get
+            {
+                return _game;
+            }
+            set
+            {
+                _game = value;
+                switch (value.Type)
+                {
+                    case GameType.ProjectSekai:
+                        SpecifyUnityVersion = "2022.3.32f1";
+                        break;
+                    case GameType.GirlsFrontline:
+                        SpecifyUnityVersion = "2019.4.40f1";
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        private bool _enableLuaScript = false;
+
+        public bool EnableLuaScript
+        {
+            get => _enableLuaScript; 
+            set 
+            {
+                _enableLuaScript = value;
+                if (value)
+                {
+                    InitLuaEnv();
+                }
+            }
+        }
+        private Lua luaEnvironment = new Lua();
+        public string LuaScript = "";
         public bool Silent = false;
         public bool SkipProcess = false;
         public bool ResolveDependencies = false;        
@@ -27,6 +66,34 @@ namespace AssetStudio
         internal HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        public void SetSpecifyUnityVersion(string version)
+        {
+            SpecifyUnityVersion = version;
+        }
+        
+        public void SetGame(string game)
+        {
+            Game = GameManager.GetGame(game);
+        }
+
+        public void SetUnityCNKey(string Name, string Key)
+        {
+            UnityCN.SetKey(new UnityCN.Entry(Name, Key));
+        }
+        
+        private void InitLuaEnv()
+        {
+            var luaMethods = new LuaMethods();
+            var methods = typeof(LuaMethods).GetMethods();
+            foreach (var method in methods)
+            {
+                luaEnvironment.RegisterFunction(method.Name, luaMethods, method);
+            }
+            luaEnvironment.RegisterFunction("SetUnityVersion", this, GetType().GetMethod("SetSpecifyUnityVersion"));
+            luaEnvironment.RegisterFunction("SetGame", this, GetType().GetMethod("SetGame"));
+            luaEnvironment.RegisterFunction("SetUnityCNKey", this, GetType().GetMethod("SetUnityCNKey"));
+        }
 
         public void LoadFiles(params string[] files)
         {
@@ -107,7 +174,28 @@ namespace AssetStudio
 
         private void LoadFile(string fullName)
         {
-            var reader = new FileReader(fullName);
+            FileReader reader = null;
+            if (!EnableLuaScript || LuaScript == "")
+            {
+                reader = new FileReader(fullName);
+            }
+            else
+            {
+                Logger.Info("Processing file with lua script...");
+                luaEnvironment["filepath"] = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(fullName));
+                luaEnvironment["filename"] = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(Path.GetFileName(fullName)));
+                luaEnvironment["filestream"] = new FileStream(fullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                try
+                {
+                    var result = luaEnvironment.DoString(LuaScript);
+                    Stream fs = (Stream)result[0];
+                    reader = new FileReader(fullName, fs);
+                }
+                catch (Exception e)
+                {
+                    Logger.Error($"Error while reading file {fullName} with lua", e);
+                }
+            }
             reader = reader.PreProcessing(Game);
             LoadFile(reader);
         }

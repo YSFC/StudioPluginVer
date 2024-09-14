@@ -45,6 +45,8 @@ namespace AssetStudio
                     return FileType.BundleFile;
                 case "UnityWebData1.0":
                     return FileType.WebFile;
+                case "TuanjieWebData1.0":
+                    return FileType.WebFile;
                 case "blk":
                     return FileType.BlkFile;
                 case "ENCR":
