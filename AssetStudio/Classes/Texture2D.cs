@@ -91,6 +91,10 @@ namespace AssetStudio
             }
             
             m_TextureFormat = (TextureFormat)reader.ReadInt32();
+            if (reader.Game.Type.IsLeapOverTheRainbow() && (int)m_TextureFormat == 255)
+            {
+                m_TextureFormat = TextureFormat.ASTC_RGB_6x6;
+			}
             if (version[0] < 5 || (version[0] == 5 && version[1] < 2)) //5.2 down
             {
                 m_MipMap = reader.ReadBoolean();

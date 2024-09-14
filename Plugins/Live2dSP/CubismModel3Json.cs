@@ -10,6 +10,7 @@ namespace UnityLive2DExtractorSP
     public class CubismModel3Json
     {
         public int Version;
+        public string Name;
         public SerializableFileReferences FileReferences;
         public SerializableGroup[] Groups;
 		public JObject Options;
