@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Xml.Linq;
 
@@ -785,19 +786,66 @@ namespace UnityLive2DExtractorSP
                         options["ScaleFactor"] = 0.05;
 						job[""] = jarray;
 						var groups = new List<CubismModel3Json.SerializableGroup>();
-						var model3 = new CubismModel3Json
+
+                        var parametersT1 = AssetList.ExportableAssets.Where(x => x.Container.Contains(live2dbasename));
+						var eyeBlinkParametersT2 = parametersT1.Where(x => x.Type == ClassIDType.MonoBehaviour && (x.Asset as MonoBehaviour).m_Script.TryGet(out var resutS) && resutS.m_ClassName == "CubismEyeBlinkParameter").Select(x => x.Asset as MonoBehaviour);
+						var eyeBlinkParameters = eyeBlinkParametersT2.Select(x =>
+                        {
+                            x.m_GameObject.TryGet(out var resutS);
+                            return resutS.m_Name;
+                        }
+                        );
+
+						if (eyeBlinkParameters.Count() == 0)
+						{
+                            var eyeBlinkParametersT3 = parametersT1.Select(x => x.Asset as GameObject).Where(x => x != null); ;
+                            eyeBlinkParameters = (from x in eyeBlinkParametersT3
+                                                  where x.m_Name.ToLower().Contains("eye") && x.m_Name.ToLower().Contains("open") && (x.m_Name.ToLower().Contains('l') || x.m_Name.ToLower().Contains('r'))
+                                                  select x.m_Name);
+						}
+                        groups.Add(new CubismModel3Json.SerializableGroup
+                        {
+                            Target = "Parameter",
+                            Name = "EyeBlink",
+                            Ids = eyeBlinkParameters.ToArray()
+                        });
+
+                        var lipSyncParametersT2 = parametersT1.Where(x => x.Type == ClassIDType.MonoBehaviour && (x.Asset as MonoBehaviour).m_Script.TryGet(out var resutS) && resutS.m_ClassName == "CubismMouthParameter").Select(x => x.Asset as MonoBehaviour);
+						var lipSyncParameters = lipSyncParametersT2.Select(x =>
+						{
+							x.m_GameObject.TryGet(out var resutS);
+							return resutS.m_Name;
+						}
+						);
+                        if (lipSyncParameters.Count() == 0)
+						{
+                            var lipSyncParametersT3 = parametersT1.Select(x => x.Asset as GameObject).Where(x => x != null);
+							lipSyncParameters = (from x in lipSyncParametersT3
+												 where x.m_Name.ToLower().Contains("mouth") && x.m_Name.ToLower().Contains("open") && x.m_Name.ToLower().Contains('y')
+                                                 select x.m_Name);
+                        }
+                        groups.Add(new CubismModel3Json.SerializableGroup
+                        {
+                            Target = "Parameter",
+                            Name = "LipSync",
+                            Ids = lipSyncParameters.ToArray<string>()
+                        });
+
+                        var model3 = new CubismModel3Json
 						{
 							Version = 3,
+                            Name = live2dbasename,
 							FileReferences = new CubismModel3Json.SerializableFileReferences
 							{
 								Moc = gameObject.Name + ".moc3",
 								Textures = texturePaths.ToArray(),
 								//Physics = $"{name}.physics3.json",
-								Motions = job,								
+								Motions = job,
 							},
 							Groups = groups.ToArray(),
 							Options = options
 						};
+
 						if (withPhysic)
 						{
 							model3.FileReferences.Physics = $"{gameObject.Name}.physics3.json";

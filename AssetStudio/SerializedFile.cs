@@ -80,9 +80,18 @@ namespace AssetStudio
             }
             if (header.m_Version >= SerializedFileFormatVersion.Unknown_7)
             {
-                unityVersion = reader.ReadStringToNull();
+              
                 Logger.Verbose($"Unity version {unityVersion}");
-                SetVersion(unityVersion);
+                if (game.Type.IsLeapOverTheRainbow())
+				{
+                    SetVersion("2021.3.32f1");
+                    reader.Position += 12;
+				}
+                else
+				{
+					unityVersion = reader.ReadStringToNull();
+					SetVersion(unityVersion);
+                }
             }
             if (header.m_Version >= SerializedFileFormatVersion.Unknown_8)
             {

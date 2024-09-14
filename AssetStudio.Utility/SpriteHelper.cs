@@ -205,7 +205,7 @@ namespace AssetStudio
 				{
 					try
 					{
-						Image<Bgra32> image = BuildPtNSprite(m_Sprite.m_RD, m_Sprite.m_PixelsToUnits, texSize, originalImage);
+						Image<Bgra32> image = BuildPtNSprite(m_Sprite, m_Sprite.m_PixelsToUnits, texSize, originalImage);
 						originalImage.Dispose();
 						if (image != null)
 						{
@@ -246,8 +246,9 @@ namespace AssetStudio
 			return result;
 		}
 
-		private static Image<Bgra32> BuildPtNSprite(SpriteRenderData m_RD, float m_PixelsToUnits, Size texSize, Image<Bgra32> sourceTex)
+		private static Image<Bgra32> BuildPtNSprite(Sprite sprite, float m_PixelsToUnits, Size texSize, Image<Bgra32> sourceTex)
 		{
+			var m_RD = sprite.m_RD;
 			new List<Vector2[]>();
 			VertexData m_VertexData = m_RD.m_VertexData;
 			var subMeshes = m_RD.m_SubMeshes;
@@ -310,7 +311,7 @@ namespace AssetStudio
 			};
 			NDArray uv_abs = np.round_(ndarray2).astype(np.int32, true);
 			//var size = positions_abs.max(0, false, null).ToArray<int>();
-			var size = new int[] { (int)Math.Round(m_RD.textureRect.width), (int)Math.Round(m_RD.textureRect.height) };
+			var size = new int[] { (int)Math.Round(sprite.m_Rect.width), (int)Math.Round(sprite.m_Rect.height) };
 			Size spriteSize = new Size(size[0], size[1]);
 			Image<Bgra32> spriteImg = new Image<Bgra32>(_configuration, spriteSize.Width, spriteSize.Height, SixLabors.ImageSharp.Color.Transparent);
 			for (int j = 0; j < npTriangles.shape[0]; j++)
