@@ -710,7 +710,14 @@ namespace AssetStudio
                         return;
                     }
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo, Game);
-					try
+
+                    //ÔÝ²»Ö§³Ö
+                    if (Game.Type.IsGuiLongChao() && objectReader.type == ClassIDType.AnimationClip)
+                    {
+                        continue;
+                    }
+
+                    try
                     {
                         Object obj = objectReader.type switch
                         {

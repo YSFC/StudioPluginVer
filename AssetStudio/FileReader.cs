@@ -257,8 +257,11 @@ namespace AssetStudio
                 catch (Exception) { }
                 reader.Position = 0;
             }
-
-            Logger.Verbose("No preprocessing is needed");
+			if (game.Type.IsGuiLongChao())
+			{
+				reader.FileType = FileType.BlockFile;
+			}
+			Logger.Verbose("No preprocessing is needed");
             return reader;
         }
     } 

@@ -1963,7 +1963,14 @@ namespace AssetStudio.GUI
                             toExportAssets = visibleAssets;
                             break;
                     }
-                    await Studio.ExportAssets(saveFolderDialog.Folder, toExportAssets, exportType, Properties.Settings.Default.openAfterExport);
+                    if (enableParallelExport.Checked)
+                    {
+						Studio.ParallelExportAssets(saveFolderDialog.Folder, toExportAssets, exportType, Properties.Settings.Default.openAfterExport);
+					}
+                    else
+                    {
+                        await Studio.ExportAssets(saveFolderDialog.Folder, toExportAssets, exportType, Properties.Settings.Default.openAfterExport);
+                    }
                 }
             }
             else
@@ -2010,7 +2017,11 @@ namespace AssetStudio.GUI
         {
             logger.ShowErrorMessage = toolStripMenuItem15.Checked;
         }
-        private async void toolStripMenuItem19_DropDownOpening(object sender, EventArgs e)
+		private void enableParallelExport_Click(object sender, EventArgs e)
+		{
+			
+		}
+		private async void toolStripMenuItem19_DropDownOpening(object sender, EventArgs e)
         {
             if (specifyAIVersion.Enabled && await AIVersionManager.FetchVersions())
             {

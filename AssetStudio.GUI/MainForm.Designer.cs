@@ -77,8 +77,9 @@ namespace AssetStudio.GUI
             exportAllAssetsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             exportSelectedAssetsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             exportFilteredAssetsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            exportAnimatorWithSelectedAnimationClipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+			toolStripSeparator33 = new System.Windows.Forms.ToolStripSeparator();
+			exportAnimatorWithSelectedAnimationClipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             toolStripMenuItem4 = new System.Windows.Forms.ToolStripMenuItem();
@@ -101,8 +102,9 @@ namespace AssetStudio.GUI
             filterTypeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             allToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             debugMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripMenuItem15 = new System.Windows.Forms.ToolStripMenuItem();
-            exportClassStructuresMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			toolStripMenuItem15 = new System.Windows.Forms.ToolStripMenuItem();
+			enableParallelExport = new System.Windows.Forms.ToolStripMenuItem();
+			exportClassStructuresMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             enableConsole = new System.Windows.Forms.ToolStripMenuItem();
             clearConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             enableFileLogging = new System.Windows.Forms.ToolStripMenuItem();
@@ -494,7 +496,7 @@ namespace AssetStudio.GUI
             // 
             // exportToolStripMenuItem
             // 
-            exportToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { exportAllAssetsMenuItem, exportSelectedAssetsMenuItem, exportFilteredAssetsMenuItem, toolStripSeparator3, exportAnimatorWithSelectedAnimationClipToolStripMenuItem, toolStripSeparator4, toolStripMenuItem2, toolStripMenuItem3, toolStripMenuItem16, toolStripSeparator2, toolStripMenuItem10, sceneHierarchy });
+            exportToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { exportAllAssetsMenuItem, exportSelectedAssetsMenuItem, exportFilteredAssetsMenuItem, toolStripSeparator3, enableParallelExport, toolStripSeparator33, exportAnimatorWithSelectedAnimationClipToolStripMenuItem, toolStripSeparator4, toolStripMenuItem2, toolStripMenuItem3, toolStripMenuItem16, toolStripSeparator2, toolStripMenuItem10, sceneHierarchy });
             exportToolStripMenuItem.Name = "exportToolStripMenuItem";
             exportToolStripMenuItem.Size = new System.Drawing.Size(53, 20);
             exportToolStripMenuItem.Text = "Export";
@@ -524,10 +526,25 @@ namespace AssetStudio.GUI
             // 
             toolStripSeparator3.Name = "toolStripSeparator3";
             toolStripSeparator3.Size = new System.Drawing.Size(263, 6);
-            // 
-            // exportAnimatorWithSelectedAnimationClipToolStripMenuItem
-            // 
-            exportAnimatorWithSelectedAnimationClipToolStripMenuItem.Name = "exportAnimatorWithSelectedAnimationClipToolStripMenuItem";
+			// 
+			// enableParallelExport
+			// 
+			enableParallelExport.Checked = true;
+			enableParallelExport.CheckOnClick = true;
+			enableParallelExport.CheckState = System.Windows.Forms.CheckState.Unchecked;
+			enableParallelExport.Name = "enableParallelExport";
+			enableParallelExport.Size = new System.Drawing.Size(191, 22);
+			enableParallelExport.Text = "Use Parallel Export";
+			enableParallelExport.Click += enableParallelExport_Click;
+			// 
+			// toolStripSeparator33
+			// 
+			toolStripSeparator33.Name = "toolStripSeparator33";
+			toolStripSeparator33.Size = new System.Drawing.Size(263, 6);
+			// 
+			// exportAnimatorWithSelectedAnimationClipToolStripMenuItem
+			// 
+			exportAnimatorWithSelectedAnimationClipToolStripMenuItem.Name = "exportAnimatorWithSelectedAnimationClipToolStripMenuItem";
             exportAnimatorWithSelectedAnimationClipToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
             exportAnimatorWithSelectedAnimationClipToolStripMenuItem.Text = "Animator + selected AnimationClips";
             exportAnimatorWithSelectedAnimationClipToolStripMenuItem.Click += exportAnimatorwithAnimationClipMenuItem_Click;
@@ -1528,7 +1545,8 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ToolStripMenuItem exportSelectedObjectsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exportSelectedObjectsWithAnimationClipToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
-        private System.Windows.Forms.ToolStripMenuItem exportAnimatorWithSelectedAnimationClipToolStripMenuItem;
+		private System.Windows.Forms.ToolStripSeparator toolStripSeparator33;
+		private System.Windows.Forms.ToolStripMenuItem exportAnimatorWithSelectedAnimationClipToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exportAllObjectssplitToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem goToSceneHierarchyToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exportSelectedObjectsmergeToolStripMenuItem;
@@ -1557,8 +1575,9 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem13;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem14;
         private System.Windows.Forms.ToolStripTextBox specifyUnityVersion;
-        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem15;
-        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem18;
+		private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem15;
+		private System.Windows.Forms.ToolStripMenuItem enableParallelExport;
+		private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem18;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem19;
         private System.Windows.Forms.ToolStripComboBox specifyGame;
         private System.Windows.Forms.ToolStripComboBox specifyAIVersion;

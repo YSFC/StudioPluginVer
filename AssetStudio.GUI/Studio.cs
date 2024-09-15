@@ -1,6 +1,7 @@
 ﻿﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -632,6 +633,184 @@ namespace AssetStudio.GUI
                 {
                     OpenFolderInExplorer(savePath);
                 }
+            });
+        }
+
+
+        public static void ParallelExportAssets(string savePath, List<AssetItem> toExportAssets, ExportType exportType, bool openAfterExport)
+        {
+            ThreadPool.QueueUserWorkItem(state =>
+            {
+                Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+
+                var groupOption = (AssetGroupOption)Properties.Settings.Default.assetGroupOption;
+                var parallelExportCount = 16;
+                var toExportAssetDict = new ConcurrentDictionary<AssetItem, string>();
+                var toParallelExportAssetDict = new ConcurrentDictionary<AssetItem, string>();
+                var exceptionMsgs = new ConcurrentDictionary<Exception, string>();
+                var mode = exportType == ExportType.Dump ? "Dump" : "Export";
+                var toExportCount = toExportAssets.Count;
+                var exportedCount = 0;
+                var i = 0;
+                Progress.Reset();
+
+                Parallel.ForEach(toExportAssets, asset =>
+                {
+                    string exportPath;
+                    switch (groupOption)
+                    {
+                        case AssetGroupOption.ByType: //type name
+                            exportPath = Path.Combine(savePath, asset.TypeString);
+                            break;
+                        case AssetGroupOption.ByContainer: //container path
+                            if (!string.IsNullOrEmpty(asset.Container))
+                            {
+                                exportPath = Path.HasExtension(asset.Container) ? Path.Combine(savePath, Path.GetDirectoryName(asset.Container)) : Path.Combine(savePath, asset.Container);
+                            }
+                            else
+                            {
+                                exportPath = savePath;
+                            }
+                            break;
+                        case AssetGroupOption.BySource: //source file
+                            if (string.IsNullOrEmpty(asset.SourceFile.originalPath))
+                            {
+                                exportPath = Path.Combine(savePath, asset.SourceFile.fileName + "_export");
+                            }
+                            else
+                            {
+                                exportPath = Path.Combine(savePath, Path.GetFileName(asset.SourceFile.originalPath) + "_export", asset.SourceFile.fileName);
+                            }
+                            break;
+                        case AssetGroupOption.ByContainerAndFilename: //container path and file
+                            if (!string.IsNullOrEmpty(asset.Container))
+                            {
+                                exportPath = Path.Combine(savePath, Path.GetDirectoryName(asset.Container), Path.GetFileNameWithoutExtension(asset.Container));
+                            }
+                            else
+                            {
+                                exportPath = savePath;
+                            }
+                            break;
+                        default:
+                            exportPath = savePath;
+                            break;
+                    }
+                    exportPath += Path.DirectorySeparatorChar;
+
+                    if (exportType == ExportType.Convert)
+                    {
+                        switch (asset.Type)
+                        {
+                            case ClassIDType.Texture2D:
+                            case ClassIDType.Sprite:
+                            case ClassIDType.AudioClip:
+                                toParallelExportAssetDict.TryAdd(asset, exportPath);
+                                break;                            
+                            default:
+                                toExportAssetDict.TryAdd(asset, exportPath);
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        toExportAssetDict.TryAdd(asset, exportPath);
+                    }
+                });
+
+                foreach (var toExportAsset in toExportAssetDict)
+                {
+                    var asset = toExportAsset.Key;
+                    var exportPath = toExportAsset.Value;
+                    var isExported = false;
+                    try
+                    {
+                        Logger.Info($"[{exportedCount + 1}/{toExportCount}] {mode}ing {asset.TypeString}: {asset.Text}");
+                        switch (exportType)
+                        {
+                            case ExportType.Raw:
+                                isExported = ExportRawFile(asset, exportPath);
+                                break;
+                            case ExportType.Dump:
+                                isExported = ExportDumpFile(asset, exportPath);
+                                break;
+                            case ExportType.Convert:
+                                isExported = ExportConvertFile(asset, exportPath);
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"{mode} {asset.TypeString}: {asset.Text} error", ex);
+                    }
+
+                    if (isExported)
+                    {
+                        exportedCount++;
+                    }
+                    else
+                    {
+                        Logger.Warning($"Unable to {mode.ToLower()} {asset.TypeString}: {asset.Text}");
+                    }
+
+                    Progress.Report(++i, toExportCount);
+                }
+
+                Parallel.ForEach(toParallelExportAssetDict, new ParallelOptions { MaxDegreeOfParallelism = parallelExportCount }, (toExportAsset, loopState) =>
+                {
+                    var asset = toExportAsset.Key;
+                    var exportPath = toExportAsset.Value;
+                    try
+                    {
+                        if (ParallelExporter.ParallelExportConvertFile(asset, exportPath))
+                        {
+                            Interlocked.Increment(ref exportedCount);
+                            Logger.Info($"[{exportedCount}/{toExportCount}] Exporting {asset.TypeString}: {asset.Text}");
+                            //if (GUILogger.ShowDebugMessage)
+                            //{
+                            //	Logger.Debug(debugLog);
+                            //	StatusStripUpdate($"[{exportedCount}/{toExportCount}] Exporting {asset.TypeString}: {asset.Text}");
+                            //}
+                            //else
+                            //{
+                            //	Logger.Info($"[{exportedCount}/{toExportCount}] Exporting {asset.TypeString}: {asset.Text}");
+                            //}
+                        }
+                        Interlocked.Increment(ref i);
+                        Progress.Report(i, toExportCount);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (parallelExportCount == 1)
+                        {
+                            Logger.Error($"{mode} {asset.TypeString}: {asset.Text} error", ex);
+                        }
+                        else
+                        {
+                            loopState.Break();
+                            exceptionMsgs.TryAdd(ex, $"Exception occurred when exporting {asset.TypeString}: {asset.Text}\n{ex}\n");
+                        }
+                    }
+                });
+                ParallelExporter.ClearHash();
+
+                foreach (var ex in exceptionMsgs)
+                {
+                    Logger.Error(ex.Value);
+                }
+				var statusText = exportedCount == 0 ? "Nothing exported." : $"Finished exporting {exportedCount} assets.";
+
+				if (toExportCount > exportedCount)
+				{
+					statusText += $" {toExportCount - exportedCount} assets skipped (not extractable or files already exist)";
+				}
+
+				StatusStripUpdate(statusText);
+
+				if (openAfterExport && exportedCount > 0)
+				{
+					OpenFolderInExplorer(savePath);
+				}
             });
         }
 

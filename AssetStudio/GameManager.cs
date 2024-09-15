@@ -53,6 +53,7 @@ namespace AssetStudio
 			Games.Add(index++, new Game(GameType.FirstByteXor));
 			Games.Add(index++, new Game(GameType.PathToNowhere));
 			Games.Add(index++, new Game(GameType.LeapOverTheRainbow));
+			Games.Add(index++, new Game(GameType.GuiLongChao));
 		}
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -176,7 +177,8 @@ namespace AssetStudio
         PerpetualNovelty,
 		FirstByteXor,
 		PathToNowhere,
-		LeapOverTheRainbow
+		LeapOverTheRainbow,
+		GuiLongChao
 	}
 
     public static class GameTypes
@@ -205,6 +207,7 @@ namespace AssetStudio
         public static bool IsPerpetualNovelty(this GameType type) => type == GameType.PerpetualNovelty;
 		public static bool IsPathToNowhere(this GameType type) => type == GameType.PathToNowhere;
 		public static bool IsLeapOverTheRainbow(this GameType type) => type == GameType.LeapOverTheRainbow;
+		public static bool IsGuiLongChao(this GameType type) => type == GameType.GuiLongChao;
 		public static bool IsGIGroup(this GameType type) => type switch
         {
             GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre => true,

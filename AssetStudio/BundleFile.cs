@@ -105,9 +105,10 @@ namespace AssetStudio
         }
 
         private Game Game;
-        private UnityCN UnityCN;
+		private UnityCN UnityCN;
+		private UnityCN_GLC UnityCN_GLC;
 
-        public Header m_Header;
+		public Header m_Header;
         private List<Node> m_DirectoryInfo;
         private List<StorageBlock> m_BlocksInfo;
 
@@ -144,7 +145,11 @@ namespace AssetStudio
                     {
                         ReadUnityCN(reader);
                     }
-                    ReadBlocksInfoAndDirectory(reader);
+					else if (game.Type.IsGuiLongChao())
+					{
+						ReadUnityGLC(reader);
+					}
+					ReadBlocksInfoAndDirectory(reader);
                     using (var blocksStream = CreateBlocksStream(reader.FullPath))
                     {
                         ReadBlocks(reader, blocksStream);
@@ -405,7 +410,38 @@ namespace AssetStudio
             }
         }
 
-        private void ReadBlocksInfoAndDirectory(FileReader reader)
+		private void ReadUnityGLC(FileReader reader)
+		{
+			Logger.Verbose($"Attempting to decrypt file {reader.FileName} with UnityCN encryption");
+			ArchiveFlags mask;
+
+			var version = ParseVersion();
+			//Flag changed it in these versions
+			if (version[0] < 2020 || //2020 and earlier
+				(version[0] == 2020 && version[1] == 3 && version[2] <= 34) || //2020.3.34 and earlier
+				(version[0] == 2021 && version[1] == 3 && version[2] <= 2) || //2021.3.2 and earlier
+				(version[0] == 2022 && version[1] == 3 && version[2] <= 1)) //2022.3.1 and earlier
+			{
+				mask = ArchiveFlags.BlockInfoNeedPaddingAtStart;
+				HasBlockInfoNeedPaddingAtStart = false;
+			}
+			else
+			{
+				mask = ArchiveFlags.UnityCNEncryption;
+				HasBlockInfoNeedPaddingAtStart = true;
+			}
+
+			Logger.Verbose($"Mask set to {mask}");
+
+			if ((m_Header.flags & mask) != 0)
+			{
+				Logger.Verbose($"Encryption flag exist, file is encrypted, attempting to decrypt");
+				UnityCN_GLC = new UnityCN_GLC(reader);
+			}
+		}
+
+
+		private void ReadBlocksInfoAndDirectory(FileReader reader)
         {
             byte[] blocksInfoBytes;
             var version = ParseVersion();
@@ -597,7 +633,12 @@ namespace AssetStudio
                                     Logger.Verbose($"Decrypting block with UnityCN...");
                                     UnityCN.DecryptBlock(compressedBytes, compressedSize, i);
                                 }
-                                if (Game.Type.IsNetEase() && i == 0)
+								if (Game.Type.IsGuiLongChao() && ((int)blockInfo.flags & 0x100) != 0)
+								{
+									Logger.Verbose($"Decrypting block with GuiLongChao...");
+									UnityCN_GLC.DecryptBlock(compressedBytes, compressedSize, i);
+								}
+								if (Game.Type.IsNetEase() && i == 0)
                                 {
                                     NetEaseUtils.DecryptWithHeader(compressedBytesSpan);
                                 }
