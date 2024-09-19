@@ -54,6 +54,7 @@ namespace AssetStudio
 			Games.Add(index++, new Game(GameType.PathToNowhere));
 			Games.Add(index++, new Game(GameType.LeapOverTheRainbow));
 			Games.Add(index++, new Game(GameType.GuiLongChao));
+			Games.Add(index++, new Game(GameType.AliceFiction));
 		}
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -178,7 +179,8 @@ namespace AssetStudio
 		FirstByteXor,
 		PathToNowhere,
 		LeapOverTheRainbow,
-		GuiLongChao
+		GuiLongChao,
+		AliceFiction,
 	}
 
     public static class GameTypes
@@ -200,7 +202,8 @@ namespace AssetStudio
         public static bool IsTOT(this GameType type) => type == GameType.TOT;
         public static bool IsNaraka(this GameType type) => type == GameType.Naraka;
         public static bool IsOPFP(this GameType type) => type == GameType.OPFP;
-        public static bool IsNetEase(this GameType type) => type == GameType.NetEase;
+		public static bool IsAliceFiction(this GameType type) => type == GameType.AliceFiction;
+		public static bool IsNetEase(this GameType type) => type == GameType.NetEase;
         public static bool IsArknightsEndfield(this GameType type) => type == GameType.ArknightsEndfield;
         public static bool IsLoveAndDeepspace(this GameType type) => type == GameType.LoveAndDeepspace;
         public static bool IsExAstris(this GameType type) => type == GameType.ExAstris;

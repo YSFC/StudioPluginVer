@@ -1161,8 +1161,8 @@ namespace AssetStudio
 			return newReader;
 		}
 
-        public static FileReader DecryptPathToNowhere(FileReader reader)
-        {
+		public static FileReader DecryptPathToNowhere(FileReader reader)
+		{
 			Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Path to Nowhere encryption");
 
 			var signatureBytes = reader.ReadBytes(8);
@@ -1172,7 +1172,7 @@ namespace AssetStudio
 				Logger.Verbose("Found UnityFS signature, file might not be encrypted");
 				reader.Position = 0;
 				return reader;
-			}			
+			}
 
 			var data = reader.ReadBytes((int)reader.Remaining);
 
@@ -1187,10 +1187,36 @@ namespace AssetStudio
 			MemoryStream ms = new();
 			ms.Write(data.Skip(50).ToArray());
 			ms.Position = 0;
-            var newReader = new FileReader(reader.FullPath, ms);
+			var newReader = new FileReader(reader.FullPath, ms);
 			reader.Close();
 			return newReader;
 		}
+		public static FileReader DecryptAliceFiction(FileReader reader)
+		{
+			Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Alice Fiction encryption");
+
+			var signatureBytes = reader.ReadBytes(8);
+			var signature = Encoding.UTF8.GetString(signatureBytes[..7]);
+			if (signature == "UnityFS")
+			{
+				Logger.Verbose("Found UnityFS signature, file might not be encrypted");
+				reader.Position = 0;
+				return reader;
+			}
+			reader.Position = 0;
+			var data = reader.ReadBytes((int)reader.Remaining);
+
+            IKA9ntUtils.AliceFictionDecrypt(data, reader.FileName);
+			Logger.Verbose("Decrypted file done !!");
+
+			MemoryStream ms = new();
+			ms.Write(data.ToArray());
+			ms.Position = 0;
+			var newReader = new FileReader(reader.FullPath, ms);
+			reader.Close();
+			return newReader;
+		}
+
 
 	}
 }

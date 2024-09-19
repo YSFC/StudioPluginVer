@@ -184,7 +184,10 @@ namespace AssetStudio
                     case GameType.ShiningNikki:
                         reader = ParseFakeHeader(reader);
                         break;
-                    case GameType.FantasyOfWind:
+                    case GameType.AliceFiction:
+                        reader = DecryptAliceFiction(reader);
+                        break;
+					case GameType.FantasyOfWind:
                         reader = DecryptFantasyOfWind(reader);
                         break;
                     case GameType.HelixWaltz2:

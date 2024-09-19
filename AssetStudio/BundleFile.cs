@@ -650,7 +650,7 @@ namespace AssetStudio
                                 {
                                     OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
                                 }
-                                var numWrite = LZ4.Instance.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+								var numWrite = LZ4.Instance.Decompress(compressedBytesSpan, uncompressedBytesSpan);
                                 if (numWrite != uncompressedSize)
                                 {
                                     throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
