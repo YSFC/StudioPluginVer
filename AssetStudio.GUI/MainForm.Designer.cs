@@ -60,6 +60,7 @@ namespace AssetStudio.GUI
             toolStripSeparator13 = new System.Windows.Forms.ToolStripSeparator();
             toolStripMenuItem18 = new System.Windows.Forms.ToolStripMenuItem();
             specifyGame = new System.Windows.Forms.ToolStripComboBox();
+            AutoDetectMultipleBundle = new System.Windows.Forms.ToolStripMenuItem();
             toolStripMenuItem19 = new System.Windows.Forms.ToolStripMenuItem();
             specifyAIVersion = new System.Windows.Forms.ToolStripComboBox();
             showExpOpt = new System.Windows.Forms.ToolStripMenuItem();
@@ -272,7 +273,7 @@ namespace AssetStudio.GUI
             // 
             // optionsToolStripMenuItem
             // 
-            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, toolStripSeparator10, enablePreview, enableModelPreview, modelsOnly, toolStripSeparator11, displayInfo, enableResolveDependencies, allowDuplicates, skipContainer, toolStripSeparator12, toolStripMenuItem14, specifyUnityCNKey, toolStripSeparator13, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
+            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, toolStripSeparator10, enablePreview, enableModelPreview, modelsOnly, toolStripSeparator11, displayInfo, enableResolveDependencies, allowDuplicates, skipContainer, toolStripSeparator12, toolStripMenuItem14, specifyUnityCNKey, toolStripSeparator13, toolStripMenuItem18, AutoDetectMultipleBundle, toolStripMenuItem19, showExpOpt });
             optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
             optionsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             optionsToolStripMenuItem.Text = "Options";
@@ -405,6 +406,16 @@ namespace AssetStudio.GUI
             specifyGame.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             specifyGame.Name = "specifyGame";
             specifyGame.Size = new System.Drawing.Size(121, 23);
+            //
+            // AutoDetectMultipleBundle
+            //
+            AutoDetectMultipleBundle.CheckOnClick = true;
+            AutoDetectMultipleBundle.Name = "AutoDetectMultipleBundle";
+            AutoDetectMultipleBundle.Size = new System.Drawing.Size(225, 23);
+            AutoDetectMultipleBundle.Text = "Auto-detect multiple bundle";
+            AutoDetectMultipleBundle.ToolTipText = "Enable it when there is multiple bundle in the same file.";
+            AutoDetectMultipleBundle.CheckedChanged += autoDetectMultipleBundle_CheckedChanged;
+            
             // 
             // toolStripMenuItem19
             // 
@@ -1580,6 +1591,7 @@ namespace AssetStudio.GUI
 		private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem18;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem19;
         private System.Windows.Forms.ToolStripComboBox specifyGame;
+        private System.Windows.Forms.ToolStripMenuItem AutoDetectMultipleBundle;
         private System.Windows.Forms.ToolStripComboBox specifyAIVersion;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem16;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem17;

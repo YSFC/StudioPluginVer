@@ -662,7 +662,7 @@ namespace AssetStudio
                         var m_CollisionMeshConvex = reader.ReadBoolean();
                     }
 
-                    if (reader.IsTuanJie())
+                    if (reader.IsTuanJie)
                     {
                         var m_LightmapUseUV1 = reader.ReadInt32();
                         var m_fileScale = reader.ReadSingle();
@@ -710,7 +710,7 @@ namespace AssetStudio
                     reader.AlignStream();
                 }
 
-                if (reader.IsTuanJie())
+                if (reader.IsTuanJie)
                 {
                     reader.ReadInt32();
                 }

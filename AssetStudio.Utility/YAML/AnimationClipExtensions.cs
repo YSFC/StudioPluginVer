@@ -144,10 +144,6 @@ namespace AssetStudio
         }
         public static string Convert(this AnimationClip clip)
         {
-            if (clip.reader.IsTuanJie() && clip.m_MuscleClip == null)
-            {
-                return "暂不支持";
-            }
             if (!clip.m_Legacy || clip.m_MuscleClip != null)
             {
                 var converter = AnimationClipConverter.Process(clip);

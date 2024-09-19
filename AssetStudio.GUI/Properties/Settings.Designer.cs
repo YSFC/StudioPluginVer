@@ -520,5 +520,17 @@ namespace AssetStudio.GUI.Properties {
                 this["exportMaterials"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool autoDetectMultipleBundle {
+            get {
+                return ((bool)(this["autoDetectMultipleBundle"]));
+            }
+            set {
+                this["autoDetectMultipleBundle"] = value;
+            }
+        }
     }
 }

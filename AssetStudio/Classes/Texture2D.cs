@@ -2,6 +2,20 @@
 
 namespace AssetStudio
 {
+    public class DataStreamingInfo
+    {
+        public uint size;
+        public string path;
+
+        public DataStreamingInfo(ObjectReader reader)
+        {
+            var version = reader.version;
+
+            size = reader.ReadUInt32();
+            path = reader.ReadAlignedString();
+        }
+    }
+    
     public class StreamingInfo
     {
         public long offset; //ulong
@@ -12,7 +26,7 @@ namespace AssetStudio
         {
             var version = reader.version;
 
-            if (version[0] >= 2020 || reader.IsTuanJie()) //2020.1 and up or TuanJie
+            if (version[0] >= 2020) //2020.1 and up
             {
                 offset = reader.ReadInt64();
             }
@@ -66,6 +80,7 @@ namespace AssetStudio
         public GLTextureSettings m_TextureSettings;
         public ResourceReader image_data;
         public StreamingInfo m_StreamData;
+        public DataStreamingInfo m_DataStreamData;
 
         private static bool HasGNFTexture(SerializedType type) => type.Match("1D52BB98AA5F54C67C22C39E8B2E400F");
         private static bool HasExternalMipRelativeOffset(SerializedType type) => type.Match("1D52BB98AA5F54C67C22C39E8B2E400F", "5390A985F58D5524F95DB240E8789704");
@@ -79,15 +94,14 @@ namespace AssetStudio
                 var m_MipsStripped = reader.ReadInt32();
             }
             
-            if (reader.IsTuanJie())
+            if (reader.IsTuanJie)
             {
-                var m_WebStreaming = reader.ReadInt32();
-                var m_PriorityLevel = reader.ReadInt32();
+                var m_WebStreaming = reader.ReadBoolean();
+                reader.AlignStream();
 
+                var m_PriorityLevel = reader.ReadInt32();
                 var m_UploadedMode = reader.ReadInt32();
-                ////m_DataStreamData  (DataStreamingInfo)
-                var size = reader.ReadInt32();
-                var path = reader.ReadAlignedString();
+                m_DataStreamData = new DataStreamingInfo(reader);
             }
             
             m_TextureFormat = (TextureFormat)reader.ReadInt32();
@@ -156,13 +170,13 @@ namespace AssetStudio
                 var m_ColorSpace = reader.ReadInt32();
             }
             if (version[0] > 2020 || (version[0] == 2020 && version[1] >= 2)
-                || (reader.IsTuanJie() && version[0] == 2022 && version[3] >= 13)) //2020.2 and up
+                || (reader.IsTuanJie && version[0] == 2022 && version[3] >= 13)) //2020.2 and up
             {
                 var m_PlatformBlob = reader.ReadUInt8Array();
                 reader.AlignStream();
             }
             var image_data_size = reader.ReadInt32();
-            if (image_data_size == 0 && ((version[0] == 5 && version[1] >= 3) || version[0] > 5 || reader.IsTuanJie()))//5.3.0 and up
+            if (image_data_size == 0 && ((version[0] == 5 && version[1] >= 3) || version[0] > 5 || reader.IsTuanJie))//5.3.0 and up
             {
                 if (reader.Game.Type.IsGI() && HasExternalMipRelativeOffset(reader.serializedType))
                 {

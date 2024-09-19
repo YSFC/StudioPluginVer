@@ -31,27 +31,6 @@ namespace AssetStudio
                 var idx = (i % 4 * 4) + (i / 4);
                 Sub[idx] = subBytes[i];
             }
-
-        }
-
-        public static bool SetKey(Entry entry)
-        {
-            Logger.Verbose($"Initializing decryptor with key {entry.Key}");
-            try
-            {
-                using var aes = Aes.Create();
-                aes.Mode = CipherMode.ECB;
-                aes.Key = Convert.FromHexString(entry.Key);
-
-                Encryptor = aes.CreateEncryptor();
-                Logger.Verbose($"Decryptor initialized !!");
-            }
-            catch (Exception e)
-            {
-                Logger.Error($"[UnityCN] Invalid key !!\n{e.Message}");
-                return false;
-            }
-            return true;
         }
 
         public void DecryptBlock(Span<byte> bytes, int size, int index)
@@ -62,16 +41,6 @@ namespace AssetStudio
 			{
 				if (count++ >= 0x14) break;
 				offset += Decrypt(bytes.Slice(offset), index++, size - offset);
-            }
-        }
-
-        private void DecryptKey(byte[] key, byte[] data)
-        {
-            if (Encryptor != null)
-            {
-                key = Encryptor.TransformFinalBlock(key, 0, key.Length);
-                for (int i = 0; i < 0x10; i++)
-                    data[i] ^= key[i];
             }
         }
 

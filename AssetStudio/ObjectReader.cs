@@ -20,6 +20,8 @@ namespace AssetStudio
         
         public string unityVersion = "2.5.0f5";
 
+        public bool IsTuanJie = false;
+
         public ObjectReader(EndianBinaryReader reader, SerializedFile assetsFile, ObjectInfo objectInfo, Game game) : base(reader.BaseStream, reader.Endian)
         {
             this.assetsFile = assetsFile;
@@ -39,6 +41,8 @@ namespace AssetStudio
             platform = assetsFile.m_TargetPlatform;
             m_Version = assetsFile.header.m_Version;
             unityVersion = assetsFile.unityVersion;
+
+            IsTuanJie = unityVersion.Contains("t");
 
             Logger.Verbose($"Initialized reader for {type} object with {m_PathID} in file {assetsFile.fileName} !!");
         }
@@ -101,11 +105,6 @@ namespace AssetStudio
         public XForm[] ReadXFormArray()
         {
             return ReadArray(ReadXForm, ReadInt32());
-        }
-        
-        public bool IsTuanJie()
-        {
-            return unityVersion.Contains("t");
         }
     }
 }

@@ -346,7 +346,7 @@ namespace AssetStudio
             m_Index = reader.ReadInt32();
             m_ArraySize = reader.ReadInt32();
             var r = reader as ObjectReader;
-            if (null != r && r.IsTuanJie())
+            if (null != r && r.IsTuanJie)
                 m_IndexInCB = reader.ReadInt32();
             m_Type = reader.ReadSByte();
             m_Dim = reader.ReadSByte();
@@ -369,7 +369,7 @@ namespace AssetStudio
             m_Index = reader.ReadInt32();
             m_ArraySize = reader.ReadInt32();
             var r = reader as ObjectReader;
-            if (null != r && r.IsTuanJie())
+            if (null != r && r.IsTuanJie)
                 m_IndexInCB = reader.ReadInt32(); 
             m_Type = reader.ReadSByte();
             m_RowCount = reader.ReadSByte();
@@ -465,7 +465,7 @@ namespace AssetStudio
                (version[0] == 2021 && version[1] > 1) ||
                (version[0] == 2021 && version[1] == 1 && version[2] >= 4)) //2021.1.4f1 and up
             {
-                if (reader.IsTuanJie())
+                if (reader.IsTuanJie)
                     m_totalParameterCount = reader.ReadInt32();
                 m_IsPartialCB = reader.ReadBoolean();
                 reader.AlignStream();

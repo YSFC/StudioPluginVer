@@ -162,7 +162,7 @@ namespace AssetStudio
 
     public static class FileReaderExtensions
     {
-        public static FileReader PreProcessing(this FileReader reader, Game game)
+        public static FileReader PreProcessing(this FileReader reader, Game game, bool autoDetectMultipleBundle = false)
         {
             Logger.Verbose($"Applying preprocessing to file {reader.FileName}");
             if (reader.FileType == FileType.ResourceFile || !game.Type.IsNormal())
@@ -237,7 +237,7 @@ namespace AssetStudio
 						break;
 				}
             }
-            if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)
+            if (autoDetectMultipleBundle || reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)
             {
                 Logger.Verbose("File might have multiple bundles !!");
                 try

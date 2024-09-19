@@ -1,4 +1,3 @@
-﻿
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
@@ -492,8 +491,7 @@ namespace AssetStudio
             path = reader.ReadAlignedString();
             classID = (ClassIDType)reader.ReadInt32();
             script = new PPtr<MonoScript>(reader);
-            if ((version[0] == 2022 && version[1] >= 2) //2022.2 and up
-                || reader.IsTuanJie())
+            if (version[0] == 2022 && version[1] >= 2) //2022.2 and up
             {
                 flags = reader.ReadInt32();
             }
@@ -593,8 +591,7 @@ namespace AssetStudio
             path = reader.ReadAlignedString();
             classID = reader.ReadInt32();
             script = new PPtr<MonoScript>(reader);
-            if ((version[0] == 2022 && version[1] >= 2) //2022.2 and up
-                || reader.IsTuanJie())
+            if (version[0] == 2022 && version[1] >= 2) //2022.2 and up
             {
                 flags = reader.ReadInt32();
             }
@@ -1683,11 +1680,6 @@ namespace AssetStudio
             {
                 isIntCurve = reader.ReadByte();
             }
-
-            if (reader.IsTuanJie())
-            {
-                isSerializeReferenceCurve = reader.ReadByte();
-            }
             reader.AlignStream();
         }
 
@@ -1843,119 +1835,9 @@ namespace AssetStudio
 
         private bool hasStreamingInfo = false;
 
-
-		public void AnimationClipTuanjiej(ObjectReader reader)
-		{
-			if (version[0] >= 5)//5.0 and up
-			{
-				m_Legacy = reader.ReadBoolean();
-			}
-			else if (version[0] >= 4)//4.0 and up
-			{
-				m_AnimationType = (AnimationType)reader.ReadInt32();
-				if (m_AnimationType == AnimationType.Legacy)
-					m_Legacy = true;
-			}
-			else
-			{
-				m_Legacy = true;
-			}
-			m_Compressed = reader.ReadBoolean();
-			if (version[0] > 4 || (version[0] == 4 && version[1] >= 3))//4.3 and up
-			{
-				m_UseHighQualityCurve = reader.ReadBoolean();
-			}
-			reader.AlignStream();
-			//m_RotationCurves
-			int numRCurves = reader.ReadInt32();
-			m_RotationCurves = new List<QuaternionCurve>();
-			for (int i = 0; i < numRCurves; i++)
-			{
-				m_RotationCurves.Add(new QuaternionCurve(reader));
-			}
-
-			//m_CompressedRotationCurves
-			//reader.AlignStream();
-			int numCRCurves = reader.ReadInt32();
-			m_CompressedRotationCurves = new List<CompressedAnimationCurve>();
-			for (int i = 0; i < numCRCurves; i++)
-			{
-				m_CompressedRotationCurves.Add(new CompressedAnimationCurve(reader));
-			}
-
-			reader.AlignStream();
-			// m_FloatCurves
-			int numFCurves = reader.ReadInt32();
-			m_FloatCurves = new List<FloatCurve>();
-			for (int i = 0; i < numFCurves; i++)
-			{
-				m_FloatCurves.Add(new FloatCurve(reader));
-			}
-
-			//m_PPtrCurves
-			int numPtrCurves = reader.ReadInt32();
-			m_PPtrCurves = new List<PPtrCurve>();
-			for (int i = 0; i < numPtrCurves; i++)
-			{
-				m_PPtrCurves.Add(new PPtrCurve(reader));
-			}
-
-			m_SampleRate = reader.ReadSingle();
-			m_WrapMode = reader.ReadInt32();
-
-			if (version[0] > 3 || (version[0] == 3 && version[1] >= 4)) //3.4 and up
-			{
-				m_Bounds = new AABB(reader);
-			}
-
-			//m_AnimData 
-			reader.AlignStream();
-
-			if (version[0] >= 4)//4.0 and up
-			{
-				m_MuscleClipSize = reader.ReadUInt32();
-                //todo 这里暂时读取切片，ClipMuscleConstant改了
-                var tuanjieConstant = reader.ReadBytes(Convert.ToInt32(m_MuscleClipSize));
-				//m_MuscleClip = new ClipMuscleConstant(reader);
-			}
-
-			//m_StreamingInfo
-			var offset = reader.ReadUInt64();
-			var size = reader.ReadUInt32();
-			var path = reader.ReadAlignedString();
-
-			if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
-			{
-				m_ClipBindingConstant = new AnimationClipBindingConstant(reader);
-			}
-			if (version[0] > 2018 || (version[0] == 2018 && version[1] >= 3)) //2018.3 and up
-			{
-				var m_HasGenericRootTransform = reader.ReadBoolean();
-				var m_HasMotionFloatCurves = reader.ReadBoolean();
-				reader.AlignStream();
-			}
-			int numEvents = reader.ReadInt16();
-			m_Events = new List<AnimationEvent>();
-			for (int i = 0; i < numEvents; i++)
-			{
-				m_Events.Add(new AnimationEvent(reader));
-			}
-			if (version[0] >= 2017) //2017 and up
-			{
-				reader.AlignStream();
-			}
-		}
-
-
-		public AnimationClip(ObjectReader reader) : base(reader)
+        public AnimationClip(ObjectReader reader) : base(reader)
         {
-			if (reader.IsTuanJie())
-			{
-				AnimationClipTuanjiej(reader);
-				return;
-			}
-
-			if (version[0] >= 5)//5.0 and up
+            if (version[0] >= 5)//5.0 and up
             {
                 m_Legacy = reader.ReadBoolean();
             }
@@ -2006,32 +1888,41 @@ namespace AssetStudio
             {
                 var m_aclType = reader.ReadInt32();
             }
-                     
-            if (version[0] > 5 || (version[0] == 5 && version[1] >= 3))//5.3 and up
+
+            if (reader.IsTuanJie)
             {
-                int numEulerCurves = reader.ReadInt32();
                 m_EulerCurves = new List<Vector3Curve>();
-                for (int i = 0; i < numEulerCurves; i++)
+                m_PositionCurves = new List<Vector3Curve>();
+                m_ScaleCurves = new List<Vector3Curve>();
+            }
+            else
+            {
+                if (version[0] > 5 || (version[0] == 5 && version[1] >= 3))//5.3 and up
                 {
-                    m_EulerCurves.Add(new Vector3Curve(reader));
+                    int numEulerCurves = reader.ReadInt32();
+                    m_EulerCurves = new List<Vector3Curve>();
+                    for (int i = 0; i < numEulerCurves; i++)
+                    {
+                        m_EulerCurves.Add(new Vector3Curve(reader));
+                    }
+                }
+
+                int numPCurves = reader.ReadInt32();
+                m_PositionCurves = new List<Vector3Curve>();
+                for (int i = 0; i < numPCurves; i++)
+                {
+                    m_PositionCurves.Add(new Vector3Curve(reader));
+                }
+
+                int numSCurves = reader.ReadInt32();
+                m_ScaleCurves = new List<Vector3Curve>();
+                for (int i = 0; i < numSCurves; i++)
+                {
+                    m_ScaleCurves.Add(new Vector3Curve(reader));
                 }
             }
 
-			int numPCurves = reader.ReadInt32();
-			m_PositionCurves = new List<Vector3Curve>();
-			for (int i = 0; i < numPCurves; i++)
-			{
-				m_PositionCurves.Add(new Vector3Curve(reader));
-			}
-
-			int numSCurves = reader.ReadInt32();
-			m_ScaleCurves = new List<Vector3Curve>();
-			for (int i = 0; i < numSCurves; i++)
-			{
-				m_ScaleCurves.Add(new Vector3Curve(reader));
-			}
-
-			int numFCurves = reader.ReadInt32();
+            int numFCurves = reader.ReadInt32();
             m_FloatCurves = new List<FloatCurve>();
             for (int i = 0; i < numFCurves; i++)
             {
@@ -2058,7 +1949,7 @@ namespace AssetStudio
             {
                 m_Bounds = new AABB(reader);
             }
-                        
+
             if (version[0] >= 4)//4.0 and up
             {
                 if (reader.Game.Type.IsGI())
@@ -2080,9 +1971,22 @@ namespace AssetStudio
                 }
                 else
                 {
-                    m_MuscleClipSize = reader.ReadUInt32();
-					m_MuscleClip = new ClipMuscleConstant(reader);
-				}
+                    if (reader.IsTuanJie)
+                    {
+                        m_MuscleClipSize = reader.ReadUInt32();
+                        if (m_MuscleClipSize > 0)
+                        {
+                            reader.ReadUInt32(); // not needed
+                            m_MuscleClip = new ClipMuscleConstant(reader);
+                            m_StreamData = new StreamingInfo(reader);
+                        }
+                    }
+                    else
+                    {
+                        m_MuscleClipSize = reader.ReadUInt32();
+                        m_MuscleClip = new ClipMuscleConstant(reader);
+                    }
+                }
             }
             if (reader.Game.Type.IsSRGroup())
             {

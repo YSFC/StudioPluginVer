@@ -12,6 +12,7 @@ namespace AssetStudio
         {
             int index = 0;
             Games.Add(index++, new(GameType.Normal));
+            Games.Add(index++, new Game(GameType.FakeHeader));
             Games.Add(index++, new(GameType.UnityCN));
             Games.Add(index++, new Mhy(GameType.GI, GIMhyShiftRow, GIMhyKey, GIMhyMul, GIExpansionKey, GISBox, GIInitVector, GIInitSeed));
             Games.Add(index++, new Mr0k(GameType.GI_Pack, PackExpansionKey, blockKey: PackBlockKey));
@@ -29,7 +30,6 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.Naraka));
             Games.Add(index++, new Game(GameType.EnsembleStars));
             Games.Add(index++, new Game(GameType.OPFP));
-            Games.Add(index++, new Game(GameType.FakeHeader));
             Games.Add(index++, new Game(GameType.FantasyOfWind));
             Games.Add(index++, new Game(GameType.ShiningNikki));
             Games.Add(index++, new Game(GameType.HelixWaltz2));
@@ -137,6 +137,7 @@ namespace AssetStudio
     public enum GameType
     {
         Normal,
+        FakeHeader,
         UnityCN,
         GI,
         GI_Pack,
@@ -154,7 +155,6 @@ namespace AssetStudio
         Naraka,
         EnsembleStars,
         OPFP,
-        FakeHeader,
         FantasyOfWind,
         ShiningNikki,
         HelixWaltz2,
@@ -234,7 +234,7 @@ namespace AssetStudio
 
         public static bool IsBlockFile(this GameType type) => type switch
         {
-            GameType.BH3 or GameType.BH3Pre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield => true,
+            GameType.BH3 or GameType.BH3Pre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield or GameType.GuiLongChao => true,
             _ => false,
         };
 

@@ -40,6 +40,7 @@ namespace AssetStudio.CLI
                 }
 
                 Studio.Game = game;
+                Studio.AutoDetectMultipleBundle = o.AutoDetectMultipleBundle;
                 Logger.Default = new ConsoleLogger();
                 Logger.Flags = o.LoggerFlags.Aggregate((e, x) => e |= x);
                 Logger.FileLogging = Settings.Default.enableFileLogging;

@@ -67,6 +67,8 @@ namespace AssetStudio
         internal HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         
+        public bool autoDetectMultipleBundle = false;
+        
         public void SetSpecifyUnityVersion(string version)
         {
             SpecifyUnityVersion = version;
@@ -196,7 +198,7 @@ namespace AssetStudio
                     Logger.Error($"Error while reading file {fullName} with lua", e);
                 }
             }
-            reader = reader.PreProcessing(Game);
+            reader = reader.PreProcessing(Game, autoDetectMultipleBundle);
             LoadFile(reader);
         }
 

@@ -39,7 +39,8 @@ namespace AssetStudio.CLI
                 optionsBinder.DummyDllFolder,
                 optionsBinder.Input,
                 optionsBinder.Output,
-                optionsBinder.LuaScriptPath
+                optionsBinder.LuaScriptPath,
+                optionsBinder.AutoDetectMultipleBundle,
             };
 
             rootCommand.SetHandler(Program.Run, optionsBinder);
@@ -68,6 +69,7 @@ namespace AssetStudio.CLI
         public FileInfo Input { get; set; }
         public DirectoryInfo Output { get; set; }
         public String LuaScriptPath { get; set; }
+        public bool AutoDetectMultipleBundle { get; set; }
     }
 
     public class OptionsBinder : BinderBase<Options>
@@ -91,6 +93,7 @@ namespace AssetStudio.CLI
         public readonly Argument<FileInfo> Input;
         public readonly Argument<DirectoryInfo> Output;
         public readonly Option<string> LuaScriptPath;
+        public readonly Option<bool> AutoDetectMultipleBundle;
 
         public OptionsBinder()
         {
@@ -174,7 +177,8 @@ namespace AssetStudio.CLI
             Input = new Argument<FileInfo>("input_path", "Input file/folder.").LegalFilePathsOnly();
             Output = new Argument<DirectoryInfo>("output_path", "Output folder.").LegalFilePathsOnly();
             LuaScriptPath = new Option<string>("--lua_script", "Specify Lua script path.");
-
+            AutoDetectMultipleBundle = new Option<bool>("--auto_detect_multiple_bundle", "Auto detect multiple bundle.");
+            
             Key = new Option<byte>("--key", result =>
             {
                 return ParseKey(result.Tokens.Single().Value);
@@ -264,7 +268,8 @@ namespace AssetStudio.CLI
             DummyDllFolder = bindingContext.ParseResult.GetValueForOption(DummyDllFolder),
             Input = bindingContext.ParseResult.GetValueForArgument(Input),
             Output = bindingContext.ParseResult.GetValueForArgument(Output),
-            LuaScriptPath = bindingContext.ParseResult.GetValueForOption(LuaScriptPath)
+            LuaScriptPath = bindingContext.ParseResult.GetValueForOption(LuaScriptPath),
+            AutoDetectMultipleBundle = bindingContext.ParseResult.GetValueForOption(AutoDetectMultipleBundle),
         };
     }
 }
