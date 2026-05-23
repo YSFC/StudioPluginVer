@@ -716,10 +716,17 @@ namespace AssetStudio
                     //ÔÝ²»Ö§³Ö
                     if (Game.Type.IsGuiLongChao() && objectReader.type == ClassIDType.AnimationClip)
                     {
-                        continue;
+						Logger.Verbose($"This game's AnimationClip is not supported.");
+						continue;
+                    }
+                    if (Game.Type.IsEndlessDream() && (objectReader.type == ClassIDType.Shader || objectReader.type == ClassIDType.AnimationClip))
+                    {
+						Logger.Verbose($"This game's AnimationClip is not supported.");
+						continue;
                     }
 
-                    try
+
+					try
                     {
                         Object obj = objectReader.type switch
                         {

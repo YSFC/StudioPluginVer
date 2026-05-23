@@ -15,13 +15,19 @@ namespace Plugins.Ahykal
         public RegisterMenuType RegisterMenuType => RegisterMenuType.Folder;
 
         public void Run(PluginConnection connection)
-        {
-            this.SetCommand(new ToolStripMenuItem("ExtractFromFolder")).Click += delegate
+		{
+			var allTexCheck = new ToolStripMenuItem("JsonIncludeAllImage") { CheckOnClick = true, Checked = true };
+			this.SetCommand(allTexCheck);
+
+			var splitterWithFilename = new ToolStripMenuItem("SplitterWithFilename") { CheckOnClick = true, Checked = false };
+			this.SetCommand(splitterWithFilename);
+
+			this.SetCommand(new ToolStripMenuItem("ExtractFromFolder")).Click += delegate
             {
                 connection.Mainform.OpenFolderDelegate(async o =>
                 {
                     var assetsManager = connection.Mainform.CreateAssetsManager();
-                    await Task.Run(() => Live2DExtractor.Extract(assetsManager, o.Folder));
+                    await Task.Run(() => Live2DExtractor.Extract(assetsManager, o.Folder, allTexCheck.Checked, splitterWithFilename.Checked));
                     await Console.Out.WriteLineAsync("Done!");
                 });
             };
@@ -30,10 +36,11 @@ namespace Plugins.Ahykal
 				connection.Mainform.OpenFolderDelegate(async o =>
 				{
 					var assetsManager = connection.Mainform.CreateAssetsManager();
-					await Task.Run(() => Live2DExtractor.ExtractFiles(assetsManager, o.Folder));
+					await Task.Run(() => Live2DExtractor.ExtractFiles(assetsManager, o.Folder, allTexCheck.Checked, splitterWithFilename.Checked));
 					await Console.Out.WriteLineAsync("Done!");
 				});
 			};
+
 			this.SetCommand(new ToolStripSeparator());
             var withPathIDCheck = new ToolStripMenuItem("ExportWithPathIDFolder") { CheckOnClick = true, Checked = true };
             this.SetCommand(withPathIDCheck);

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Buffers;
+using System.Reflection.Metadata;
 
 namespace AssetStudio
 {
@@ -150,7 +151,29 @@ namespace AssetStudio
 						ReadUnityGLC(reader);
 					}
 					ReadBlocksInfoAndDirectory(reader);
-                    using (var blocksStream = CreateBlocksStream(reader.FullPath))
+                    if (game.Type.IsEndlessDream())
+                    {
+                        foreach (var block in m_BlocksInfo)
+                        {
+                            if (((uint)block.flags & 0x80) != 0)
+                            {
+                                block.compressedSize ^= block.uncompressedSize;
+                                block.compressedSize ^= 0x166C2D5C;
+                                block.uncompressedSize ^= 0x37F00D0F;
+                            }
+                        }
+
+                        foreach (var directoryInfo in m_DirectoryInfo)
+                        {
+                            if ((directoryInfo.flags & 8) != 0)
+                            {
+                                directoryInfo.offset ^= directoryInfo.size;
+                                directoryInfo.offset ^= 0x3A6426D4;
+                                directoryInfo.size ^= 0x1BF80687;
+                            }
+                        }
+                    }
+					using (var blocksStream = CreateBlocksStream(reader.FullPath))
                     {
                         ReadBlocks(reader, blocksStream);
                         ReadFiles(blocksStream, reader.FullPath);
@@ -356,16 +379,27 @@ namespace AssetStudio
 
                 XORShift128.Init = false;
                 Logger.Verbose($"Bundle header decrypted");
-               
+
                 var encUnityVersion = reader.ReadStringToNull();
                 var encUnityRevision = reader.ReadStringToNull();
                 return;
             }
 
+
             m_Header.size = reader.ReadInt64();
             m_Header.compressedBlocksInfoSize = reader.ReadUInt32();
             m_Header.uncompressedBlocksInfoSize = reader.ReadUInt32();
             m_Header.flags = (ArchiveFlags)reader.ReadUInt32();
+            if (Game.Type.IsEndlessDream())
+            {
+                m_Header.size -= 0x10CE1029;
+                m_Header.size ^= 0x37F00D0F;
+                m_Header.compressedBlocksInfoSize -= 0x8670814;
+                m_Header.uncompressedBlocksInfoSize -= 0xDFC0343;
+                m_Header.uncompressedBlocksInfoSize ^= 0x166C2D5C;
+                m_Header.uncompressedBlocksInfoSize ^= m_Header.compressedBlocksInfoSize;
+                m_Header.compressedBlocksInfoSize ^= 0x37F00D0F;
+            }
             if (m_Header.signature != "UnityFS" && !Game.Type.IsSRGroup())
             {
                 reader.ReadByte();

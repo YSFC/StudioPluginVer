@@ -181,12 +181,21 @@ namespace AssetStudio
                         break;
                     case GameType.OPFP:
                     case GameType.FakeHeader:
-                    case GameType.ShiningNikki:
-                        reader = ParseFakeHeader(reader);
+                    case GameType.ShiningNikki:			
+						reader = ParseFakeHeader(reader);
                         break;
-                    case GameType.AliceFiction:
-                        reader = DecryptAliceFiction(reader);
+					case GameType.EndlessDream:
+                        reader = EndlessDreamFakeHeader(reader);
                         break;
+					case GameType.AliceFiction:
+						reader = DecryptAliceFiction(reader);
+						break;
+					case GameType.WizardryVariantsDaphne:
+						reader = DecryptWizardryVariantsDaphne(reader);
+						break;
+					//case GameType.NINNOCENCE:
+					//	reader = DecryptNINNOCENCE(reader);
+					//	break;
 					case GameType.FantasyOfWind:
                         reader = DecryptFantasyOfWind(reader);
                         break;

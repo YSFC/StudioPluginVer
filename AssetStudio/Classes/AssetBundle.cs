@@ -13,8 +13,19 @@ namespace AssetStudio
         public PPtr<Object> asset;
 
         public AssetInfo(ObjectReader reader)
-        {
-            preloadIndex = reader.ReadInt32();
+		{
+			if (reader.Game.Type.IsEndlessDream())
+			{
+				if (reader.m_Version < SerializedFileFormatVersion.Unknown_14)
+				{
+					reader.ReadInt32();
+				}
+				else
+				{
+					reader.ReadInt64();
+				}
+			}
+			preloadIndex = reader.ReadInt32();
             preloadSize = reader.ReadInt32();
             asset = new PPtr<Object>(reader);
         }
@@ -27,6 +38,7 @@ namespace AssetStudio
 
         public AssetBundle(ObjectReader reader) : base(reader)
         {
+       
             var m_PreloadTableSize = reader.ReadInt32();
             m_PreloadTable = new List<PPtr<Object>>();
             for (int i = 0; i < m_PreloadTableSize; i++)
@@ -38,7 +50,16 @@ namespace AssetStudio
             m_Container = new List<KeyValuePair<string, AssetInfo>>();
             for (int i = 0; i < m_ContainerSize; i++)
             {
-                m_Container.Add(new KeyValuePair<string, AssetInfo>(reader.ReadAlignedString(), new AssetInfo(reader)));
+                if (reader.Game.Type.IsEndlessDream())
+                {
+                    var assetInfo = new AssetInfo(reader);
+                    var container = reader.ReadAlignedString();
+                    m_Container.Add(new KeyValuePair<string, AssetInfo>(container, assetInfo));
+                }
+                else
+                {
+                    m_Container.Add(new KeyValuePair<string, AssetInfo>(reader.ReadAlignedString(), new AssetInfo(reader)));
+                }
             }
         }
     }

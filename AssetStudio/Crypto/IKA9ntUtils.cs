@@ -13,6 +13,12 @@ namespace AssetStudio
 		//AF的
 		private const string pwd = "y9JUY4yttVeCBvZVdXsRMDLuL8H7vNyh";
 
+		//N-INNOCENCE的
+		private const string pwd_n = "4fTrch#60b<3aO48Vb";
+
+		//WizardryVariantsDaphneDecrypt
+		private const string pwd_wvd = "M3kR9/aq9W";
+
 		public static void AliceFictionDecrypt(Span<byte> data, string filename)
 		{
 			byte[] iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -44,6 +50,124 @@ namespace AssetStudio
 					using (MemoryStream dataOutput = new MemoryStream())
 					{
 						using (SeekableAesStream cs = new SeekableAesStream(ms, pwd, salt))
+						{
+							cs.CopyTo(dataOutput);
+						}
+
+						dataOutput.Position = 0;
+						dataOutput.Read(sign, 0, 5);
+						if (!Enumerable.SequenceEqual(sign, unity))
+						{
+							Console.WriteLine($"Dec error：{filename}");
+						}
+
+						dataOutput.Position = 0;
+						dataOutput.ToArray().CopyTo(data);
+					}
+				}
+				Console.WriteLine($"OK：{filename}");
+
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine($"Error：{filename}");
+			}
+			finally
+			{
+
+			}
+		}
+
+		public static void NIDecrypt(Span<byte> data, string filename)
+		{
+			byte[] iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			filename = Path.GetFileName(filename);
+
+			var unity = Encoding.UTF8.GetBytes("Unity");
+
+
+			byte[] sign = new byte[5];
+			var salt = Encoding.UTF8.GetBytes(filename);
+			data.Slice(0, 5).CopyTo(sign);
+			if (Enumerable.SequenceEqual(sign, unity))
+			{
+				return;
+			}
+
+			try
+			{
+				RijndaelManaged aesManaged = new RijndaelManaged();
+				aesManaged.IV = iv;
+				aesManaged.Mode = CipherMode.ECB;
+				aesManaged.Padding = PaddingMode.None;
+				PasswordDeriveBytes pdb = new PasswordDeriveBytes(pwd_n, salt, "SHA1", 0x64);
+				aesManaged.Key = pdb.GetBytes(16);
+				var decryptor = aesManaged.CreateDecryptor();
+				using (MemoryStream ms = new MemoryStream(data.ToArray()))
+				{
+					using (MemoryStream dataOutput = new MemoryStream())
+					{
+						using (SeekableAesStream cs = new SeekableAesStream(ms, pwd, salt))
+						{
+							cs.CopyTo(dataOutput);
+						}
+
+						dataOutput.Position = 0;
+						dataOutput.Read(sign, 0, 5);
+						if (!Enumerable.SequenceEqual(sign, unity))
+						{
+							Console.WriteLine($"Dec error：{filename}");
+						}
+
+						dataOutput.Position = 0;
+						dataOutput.ToArray().CopyTo(data);
+					}
+				}
+				Console.WriteLine($"OK：{filename}");
+
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine($"Error：{filename}");
+			}
+			finally
+			{
+
+			}
+		}
+
+
+		public static void WizardryVariantsDaphneDecrypt(Span<byte> data, string filename)
+		{
+			byte[] iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			filename = Path.GetFileName(filename);
+
+			var unity = Encoding.UTF8.GetBytes("Unity");
+
+
+			byte[] sign = new byte[5];
+			var salt = Encoding.UTF8.GetBytes(filename);
+
+			data.Slice(0, 5).CopyTo(sign);
+			if (Enumerable.SequenceEqual(sign, unity))
+			{
+				return;
+			}
+
+			try
+			{
+				RijndaelManaged aesManaged = new RijndaelManaged();
+				aesManaged.IV = iv;
+				aesManaged.Mode = CipherMode.ECB;
+				aesManaged.Padding = PaddingMode.None;
+				PasswordDeriveBytes pdb = new PasswordDeriveBytes(pwd_wvd, salt, "SHA1", 0x64);
+				aesManaged.Key = pdb.GetBytes(16);
+				var decryptor = aesManaged.CreateDecryptor();
+				using (MemoryStream ms = new MemoryStream(data.ToArray()))
+				{
+					using (MemoryStream dataOutput = new MemoryStream())
+					{
+						using (SeekableAesStream cs = new SeekableAesStream(ms, pwd_wvd, salt))
 						{
 							cs.CopyTo(dataOutput);
 						}

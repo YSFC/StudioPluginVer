@@ -337,8 +337,25 @@ namespace AssetStudio
             Logger.Verbose("Parsed fake header file successfully !!");
 			return new FileReader(reader.FullPath, stream);
         }
-        
-        public static FileReader DecryptFantasyOfWind(FileReader reader)
+
+		public static FileReader EndlessDreamFakeHeader(FileReader reader)
+		{
+			Logger.Verbose($"Attempting to parse file {reader.FileName} with fake header");
+
+			var stream = reader.BaseStream;
+			var fileSize = reader.Length;
+			var data = reader.ReadBytes(0x100);
+			var idx = data.Search("UnityFS");
+            if (idx != -1)
+            {
+                stream.Position = 0;
+                stream = new OffsetStream(stream, idx);
+            }
+
+			return new FileReader(reader.FullPath, stream);
+		}
+
+		public static FileReader DecryptFantasyOfWind(FileReader reader)
         {
             Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Fantasy of Wind encryption");
 
@@ -1207,6 +1224,57 @@ namespace AssetStudio
 			var data = reader.ReadBytes((int)reader.Remaining);
 
             IKA9ntUtils.AliceFictionDecrypt(data, reader.FileName);
+			Logger.Verbose("Decrypted file done !!");
+
+			MemoryStream ms = new();
+			ms.Write(data.ToArray());
+			ms.Position = 0;
+			var newReader = new FileReader(reader.FullPath, ms);
+			reader.Close();
+			return newReader;
+		}
+		public static FileReader DecryptWizardryVariantsDaphne(FileReader reader)
+		{
+			Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Alice Fiction encryption");
+
+			var signatureBytes = reader.ReadBytes(8);
+			var signature = Encoding.UTF8.GetString(signatureBytes[..7]);
+			if (signature == "UnityFS")
+			{
+				Logger.Verbose("Found UnityFS signature, file might not be encrypted");
+				reader.Position = 0;
+				return reader;
+			}
+			reader.Position = 0;
+			var data = reader.ReadBytes((int)reader.Remaining);
+
+			IKA9ntUtils.WizardryVariantsDaphneDecrypt(data, reader.FileName);
+			Logger.Verbose("Decrypted file done !!");
+
+			MemoryStream ms = new();
+			ms.Write(data.ToArray());
+			ms.Position = 0;
+			var newReader = new FileReader(reader.FullPath, ms);
+			reader.Close();
+			return newReader;
+		}
+
+		public static FileReader DecryptNINNOCENCE(FileReader reader)
+		{
+			Logger.Verbose($"Attempting to decrypt file {reader.FileName} with N-INNOCENCE encryption");
+
+			var signatureBytes = reader.ReadBytes(8);
+			var signature = Encoding.UTF8.GetString(signatureBytes[..7]);
+			if (signature == "UnityFS")
+			{
+				Logger.Verbose("Found UnityFS signature, file might not be encrypted");
+				reader.Position = 0;
+				return reader;
+			}
+			reader.Position = 0;
+			var data = reader.ReadBytes((int)reader.Remaining);
+
+			IKA9ntUtils.NIDecrypt(data, reader.FileName);
 			Logger.Verbose("Decrypted file done !!");
 
 			MemoryStream ms = new();

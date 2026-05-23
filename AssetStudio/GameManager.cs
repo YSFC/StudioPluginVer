@@ -56,9 +56,12 @@ namespace AssetStudio
 			Games.Add(index++, new Game(GameType.LeapOverTheRainbow));
 			Games.Add(index++, new Game(GameType.GuiLongChao));
 			Games.Add(index++, new Game(GameType.AliceFiction));
-            Games.Add(index++, new Game(GameType.CounterSide));
-            Games.Add(index++, new Game(GameType.XinYueTongXing));
-        }
+			//Games.Add(index++, new Game(GameType.NINNOCENCE));
+			Games.Add(index++, new Game(GameType.CounterSide));
+			Games.Add(index++, new Game(GameType.XinYueTongXing));
+			Games.Add(index++, new Game(GameType.EndlessDream));
+			Games.Add(index++, new Game(GameType.WizardryVariantsDaphne));			
+		}
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
         {
@@ -187,9 +190,13 @@ namespace AssetStudio
 		AliceFiction,
         CounterSide,
         XinYueTongXing,
-    }
+		EndlessDream,
+		//NINNOCENCE,
+		WizardryVariantsDaphne,
 
-    public static class GameTypes
+	}
+
+	public static class GameTypes
     {
         public static bool IsNormal(this GameType type) => type == GameType.Normal;
         public static bool IsUnityCN(this GameType type) => type == GameType.UnityCN;
@@ -209,6 +216,9 @@ namespace AssetStudio
         public static bool IsNaraka(this GameType type) => type == GameType.Naraka;
         public static bool IsOPFP(this GameType type) => type == GameType.OPFP;
 		public static bool IsAliceFiction(this GameType type) => type == GameType.AliceFiction;
+		//public static bool IsNINNOCENCE(this GameType type) => type == GameType.NINNOCENCE;
+		public static bool IsWizardryVariantsDaphne(this GameType type) => type == GameType.WizardryVariantsDaphne;
+		
 		public static bool IsNetEase(this GameType type) => type == GameType.NetEase;
         public static bool IsArknightsEndfield(this GameType type) => type == GameType.ArknightsEndfield;
         public static bool IsLoveAndDeepspace(this GameType type) => type == GameType.LoveAndDeepspace;
@@ -220,7 +230,8 @@ namespace AssetStudio
 		public static bool IsMustUnityCN(this GameType type) => type == GameType.MustUnityCN;
         public static bool IsCounterSide(this GameType type) => type == GameType.CounterSide;
         public static bool IsXinYueTongXing(this GameType type) => type == GameType.XinYueTongXing;
-        public static bool IsGIGroup(this GameType type) => type switch
+		public static bool IsEndlessDream(this GameType type) => type == GameType.EndlessDream;
+		public static bool IsGIGroup(this GameType type) => type switch
         {
             GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre => true,
             _ => false,
@@ -246,7 +257,7 @@ namespace AssetStudio
 
         public static bool IsBlockFile(this GameType type) => type switch
         {
-            GameType.BH3 or GameType.BH3Pre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield or GameType.GuiLongChao => true,
+            GameType.BH3 or GameType.BH3Pre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield or GameType.GuiLongChao or GameType.EndlessDream => true,
             _ => false,
         };
 

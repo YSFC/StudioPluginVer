@@ -111,7 +111,7 @@ namespace AssetStudio.GUI
 
         public static string FixFileName(string str)
         {
-            if (str.Length >= 260) return Path.GetRandomFileName();
+            if (str.Length + 4 >= 260) return Path.GetRandomFileName();
             return Path.GetInvalidFileNameChars().Aggregate(str, (current, c) => current.Replace(c, '_'));
         }
 

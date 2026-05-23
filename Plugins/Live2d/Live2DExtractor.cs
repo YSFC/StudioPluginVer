@@ -137,7 +137,7 @@ namespace UnityLive2DExtractor
             }
         }
 
-        public static void Extract(AssetsManager assetsManager, string folderPath)
+        public static void Extract(AssetsManager assetsManager, string folderPath, bool allTexCheck, bool splitterWithFilename)
         {
             Console.WriteLine($"Loading...");
             assetsManager.LoadFolder(folderPath);
@@ -193,7 +193,11 @@ namespace UnityLive2DExtractor
 			foreach (var cubismMoc in cubismMocs)
             {
                 var container = containers[cubismMoc];
-                var basePath = container.Substring(0, container.LastIndexOf(".") == -1 ? container.Length : container.LastIndexOf("."));
+                var basePath = container.Substring(0, container.LastIndexOf("/") == -1 ? container.Length : container.LastIndexOf("/"));
+                if (splitterWithFilename)
+                {
+					basePath = container.Substring(0, container.LastIndexOf(".") == -1 ? container.Length : container.LastIndexOf("."));
+				}
 				basePathList.Add(basePath);
 				//这里是自定义规则基文件路径的处理，修改这块以适应不同的游戏
 				//var temps = Regex.Match(basePath, @"(.+?/\d+_.+?)/");
@@ -491,13 +495,19 @@ namespace UnityLive2DExtractor
                     });
                 }
 
+                var newTextures = textures.ToList();
+                if (!allTexCheck)
+                {
+                    newTextures = newTextures.Where(x => x.Contains("texture_")).ToList();
+				}
+
                 var model3 = new CubismModel3Json
                 {
                     Version = 3,
                     FileReferences = new CubismModel3Json.SerializableFileReferences
                     {
                         Moc = $"{name}.moc3",
-                        Textures = textures.ToArray(),
+                        Textures = newTextures.ToArray(),
                         //Physics = $"{name}.physics3.json",
                         Motions = job
                     },
@@ -518,7 +528,7 @@ namespace UnityLive2DExtractor
             Console.Read();
         }
 
-		public static void ExtractFiles(AssetsManager assetsManager, string folderPath)
+		public static void ExtractFiles(AssetsManager assetsManager, string folderPath, bool allTexCheck, bool splitterWithFilename)
 		{
 			Console.WriteLine($"Loading...");
 			string[] files = Directory.GetFiles(folderPath, "*.*", SearchOption.AllDirectories);
@@ -579,8 +589,12 @@ namespace UnityLive2DExtractor
                 foreach (var cubismMoc in cubismMocs)
                 {
                     var container = containers[cubismMoc];
-                    var basePath = container.Substring(0, container.LastIndexOf("."));
-                    basePathList.Add(basePath);
+					var basePath = container.Substring(0, container.LastIndexOf("/") == -1 ? container.Length : container.LastIndexOf("/"));
+					if (splitterWithFilename)
+					{
+						basePath = container.Substring(0, container.LastIndexOf(".") == -1 ? container.Length : container.LastIndexOf("."));
+					}
+					basePathList.Add(basePath);
 					//这里是自定义规则基文件路径的处理，修改这块以适应不同的游戏
 					//var temps = Regex.Match(basePath, @"(.+?/\d+_.+?)/");
 					//basePath = basePath.Substring(0, basePath.LastIndexOf("/"));
@@ -872,13 +886,19 @@ namespace UnityLive2DExtractor
                         });
                     }
 
-                    var model3 = new CubismModel3Json
+					var newTextures = textures.ToList();
+					if (!allTexCheck)
+					{
+						newTextures = newTextures.Where(x => x.Contains("texture_")).ToList();
+					}
+
+					var model3 = new CubismModel3Json
                     {
                         Version = 3,
                         FileReferences = new CubismModel3Json.SerializableFileReferences
                         {
                             Moc = $"{name}.moc3",
-                            Textures = textures.ToArray(),
+                            Textures = newTextures.ToArray(),
                             //Physics = $"{name}.physics3.json",
                             Motions = job
                         },
